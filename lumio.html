@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lumio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#FAFAFA;color:#111;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.on{display:flex;}
+
+/* ═══════════════════════════════
+   WHO ARE YOU SCREEN
+═══════════════════════════════ */
+#s-who{
+  align-items:center;justify-content:center;
+  padding:48px 24px 40px;
+  gap:0;
+}
+.who-logo{
+  font-size:3rem;font-weight:900;letter-spacing:-.06em;
+  color:#111;margin-bottom:8px;
+}
+.who-logo span{color:#C7C7CC;font-weight:400;}
+.who-tagline{font-size:1.05rem;color:#444;font-weight:700;margin-bottom:48px;letter-spacing:-.01em;}
+.who-options{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;}
+.who-btn{
+  width:100%;padding:18px 20px;border-radius:20px;border:none;cursor:pointer;
+  font-family:inherit;font-size:1rem;font-weight:700;
+  display:flex;align-items:center;gap:14px;
+  transition:transform .12s,box-shadow .12s;
+  text-align:left;
+}
+.who-btn:active{transform:scale(.98);}
+.who-btn-icon{
+  width:46px;height:46px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+}
+.who-btn-text{flex:1;}
+.who-btn-title{font-size:1rem;font-weight:800;display:block;}
+.who-btn-sub{font-size:.78rem;font-weight:500;opacity:.7;display:block;margin-top:2px;}
+.who-btn-child{
+  background:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05);
+  color:#111;
+}
+.who-btn-parent{
+  background:#F5F5F7;
+  box-shadow:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);
+  color:#555;
+}
+
+/* ═══════════════════════════════
+   CHILDREN HOME SCREEN
+═══════════════════════════════ */
+#s-kids{background:#FAFAFA;}
+.kids-nav{
+  padding:18px 20px 0;display:flex;align-items:center;gap:10px;
+}
+.kids-nav-logo{font-size:1.1rem;font-weight:900;letter-spacing:-.03em;flex:1;}
+.kids-nav-logo span{color:#C7C7CC;font-weight:400;}
+.back-btn{
+  background:#F0F0F0;border:none;cursor:pointer;
+  border-radius:100px;padding:7px 14px;
+  font-family:inherit;font-size:.78rem;font-weight:600;color:#666;
+  display:flex;align-items:center;gap:4px;transition:background .12s;
+}
+.back-btn:hover{background:#E5E5E5;color:#111;}
+
+.kids-body{flex:1;padding:14px 16px 32px;max-width:640px;margin:0 auto;width:100%;}
+.kids-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+
+/* ── CHILD CARD ── */
+.child-card{
+  background:#fff;border-radius:24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05);
+  overflow:hidden;
+}
+.cc-header{
+  padding:16px 16px 12px;
+  display:flex;align-items:center;gap:12px;
+}
+.cc-ava{
+  width:48px;height:48px;border-radius:16px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;font-weight:800;color:#fff;overflow:hidden;
+}
+.cc-ava img{width:100%;height:100%;object-fit:cover;border-radius:16px;}
+.cc-name{font-size:1rem;font-weight:800;letter-spacing:-.02em;}
+.cc-tier{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:3px;padding:2px 8px;border-radius:100px;
+  font-size:.68rem;font-weight:700;
+}
+.cc-stars-num{
+  margin-left:auto;font-size:1.8rem;font-weight:900;
+  letter-spacing:-.04em;line-height:1;text-align:right;
+}
+.cc-stars-label{font-size:.65rem;color:#999;font-weight:600;text-align:right;margin-top:2px;}
+
+/* star pips row */
+.cc-pips{
+  padding:6px 16px 16px;display:flex;flex-wrap:wrap;gap:4px;
+}
+.pip{width:10px!important;height:10px!important;min-width:10px!important;min-height:10px!important;border-radius:50%!important;display:inline-block!important;flex-shrink:0!important;}
+
+/* progress bar */
+.cc-progress{padding:0 16px 14px;}
+.cc-prog-label{
+  display:flex;justify-content:space-between;
+  font-size:.7rem;font-weight:600;color:#999;margin-bottom:5px;
+}
+.cc-prog-track{background:#F0F0F0;border-radius:100px;height:7px;overflow:hidden;}
+.cc-prog-fill{height:100%;border-radius:100px;transition:width .9s cubic-bezier(.4,0,.2,1);}
+
+/* ── TASKS SECTION ── */
+.section-label{
+  font-size:.67rem;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:#999;margin-bottom:8px;padding:0 2px;
+}
+.tasks-card{
+  background:#fff;border-radius:20px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);
+  margin-bottom:10px;
+}
+.task-row{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;border-bottom:1px solid #F5F5F7;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background .1s;user-select:none;
+}
+.task-row:last-child{border-bottom:none;}
+.task-row:active{background:#FAFAFA;}
+.task-row.done .task-name{color:#C7C7CC;text-decoration:line-through;}
+.task-emoji-col{font-size:1.25rem;width:28px;text-align:center;flex-shrink:0;}
+.task-body{flex:1;min-width:0;}
+.task-name{font-size:.9rem;font-weight:600;transition:color .2s;}
+/* star dots for task cost */
+.task-stars-dots{display:flex;gap:3px;margin-top:4px;align-items:center;flex-wrap:wrap;}
+.sdot{width:7px!important;height:7px!important;min-width:7px!important;min-height:7px!important;border-radius:50%!important;flex-shrink:0!important;display:inline-block!important;background:#C7C7CC;}
+.sdot.empty{background:#E5E5EA!important;}
+.sdot-more{font-size:.62rem;font-weight:700;color:#999;margin-left:3px;}
+.task-check{
+  width:28px;height:28px;border-radius:50%;
+  border:2px solid #D1D1D6;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;color:transparent;
+  transition:all .18s cubic-bezier(.4,0,.2,1);
+}
+.task-check.on{color:#fff;border-color:transparent;}
+
+/* ── SHOP ── */
+.child-tabs{display:flex;gap:1px;background:#F0F0F0;border-radius:12px;padding:3px;margin-bottom:14px;}
+.ctab{
+  flex:1;border:none;background:none;cursor:pointer;font-family:inherit;
+  font-size:.8rem;font-weight:600;color:#999;padding:7px 10px;border-radius:9px;
+  transition:all .15s;
+}
+.ctab.on{background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+.tier-block{margin-bottom:18px;}
+.tier-head{
+  display:flex;align-items:center;gap:8px;padding:9px 13px;
+  border-radius:13px;margin-bottom:8px;
+}
+.tier-head-name{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.tier-head-lock{margin-left:auto;font-size:.68rem;font-weight:600;opacity:.65;}
+
+.reward-row{
+  background:#fff;border-radius:16px;
+  box-shadow:0 1px 6px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);
+  padding:13px 14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;
+}
+.reward-row.locked{opacity:.38;}
+.reward-row.bought{opacity:.55;}
+.r-icon{font-size:1.4rem;width:28px;text-align:center;flex-shrink:0;}
+.r-info{flex:1;min-width:0;}
+.r-name{font-size:.88rem;font-weight:700;}
+.r-desc{font-size:.72rem;color:#999;margin-top:2px;}
+/* star dots for reward cost */
+.r-stars{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;align-items:center;}
+.r-buy{
+  border:none;cursor:pointer;font-family:inherit;
+  font-size:.78rem;font-weight:700;padding:8px 14px;
+  border-radius:10px;color:#fff;flex-shrink:0;
+  transition:all .12s;
+}
+.r-buy:active{transform:scale(.95);}
+.r-buy:disabled{background:#D1D1D6!important;color:#999;cursor:not-allowed;}
+
+/* history */
+.purchase-pill{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  background:#fff;border-radius:14px;margin-bottom:7px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);
+}
+.purchase-pill.redeemed{opacity:.5;}
+.p-icon{font-size:1.1rem;}
+.p-info{flex:1;}
+.p-name{font-size:.86rem;font-weight:700;}
+.p-meta{font-size:.7rem;color:#999;margin-top:1px;}
+.p-badge{
+  font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:100px;
+  background:#ECFDF5;color:#059669;border:1px solid #D1FAE5;
+  white-space:nowrap;
+}
+.p-badge.used{background:#F5F5F7;color:#999;border-color:#E5E5EA;}
+
+/* ═══════════════════════════════
+   PARENT SCREEN
+═══════════════════════════════ */
+#s-parent{background:#FAFAFA;}
+.parent-nav{
+  position:sticky;top:0;z-index:20;
+  background:rgba(250,250,250,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(0,0,0,.06);
+  padding:0 16px;height:52px;
+  display:flex;align-items:center;gap:8px;
+}
+.parent-nav-title{font-size:.95rem;font-weight:800;letter-spacing:-.02em;flex:1;}
+.parent-tabs{
+  display:flex;gap:0;background:#F0F0F0;
+  border-radius:13px;padding:3px;margin:12px 16px 0;
+}
+.ptab{
+  flex:1;border:none;background:none;cursor:pointer;font-family:inherit;
+  font-size:.78rem;font-weight:600;color:#999;padding:7px 10px;
+  border-radius:10px;transition:all .15s;white-space:nowrap;
+}
+.ptab.on{background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.parent-body{padding:14px 16px 32px;max-width:600px;margin:0 auto;width:100%;}
+.ptab-panel{display:none;}
+.ptab-panel.on{display:block;}
+
+/* ── FORM ── */
+.pcard{
+  background:#fff;border-radius:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);
+  padding:18px;margin-bottom:12px;
+}
+.pcard-title{font-size:.67rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#999;margin-bottom:14px;}
+.flabel{font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#999;display:block;margin-bottom:5px;}
+.finput{
+  font-family:inherit;font-size:.9rem;font-weight:500;
+  background:#F5F5F7;border:1.5px solid transparent;
+  border-radius:11px;padding:10px 13px;width:100%;outline:none;color:#111;
+  transition:border-color .15s,background .15s;-webkit-appearance:none;
+}
+.finput::placeholder{color:#C7C7CC;}
+.finput:focus{border-color:#007AFF;background:#fff;}
+.fgroup{margin-bottom:11px;}
+.frow{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap;}
+.frow .fgroup{flex:1;min-width:100px;}
+.fselect{
+  font-family:inherit;font-size:.88rem;font-weight:500;
+  background:#F5F5F7;border:1.5px solid transparent;
+  border-radius:11px;padding:10px 13px;width:100%;outline:none;
+  color:#111;cursor:pointer;-webkit-appearance:none;
+}
+.fselect:focus{border-color:#007AFF;}
+
+.btn{
+  border:none;cursor:pointer;font-family:inherit;font-weight:700;
+  border-radius:11px;transition:all .12s;
+  display:inline-flex;align-items:center;gap:5px;font-size:.875rem;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:scale(.96);}
+.btn-primary{background:#111;color:#fff;padding:11px 20px;}
+.btn-primary:hover{background:#333;}
+.btn-sm{padding:8px 13px;font-size:.8rem;}
+.btn-ghost{background:#F5F5F7;color:#666;border:1px solid rgba(0,0,0,.06);padding:8px 13px;}
+.btn-ghost:hover{background:#EAEAEA;color:#111;}
+.btn-red{background:#FFF0F0;color:#FF3B30;}
+.btn-red:hover{background:#FFE0DE;}
+.btn-green{background:#ECFDF5;color:#059669;}
+.btn-green:hover{background:#D1FAE5;}
+
+.palette{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.swatch{
+  width:27px;height:27px;border-radius:50%;cursor:pointer;
+  outline:2px solid transparent;outline-offset:2px;transition:transform .12s;
+}
+.swatch:hover{transform:scale(1.1);}
+.swatch.on{outline-color:#111;}
+.photo-trigger{
+  display:inline-flex;align-items:center;gap:5px;
+  background:#F5F5F7;border:1.5px dashed #D1D1D6;
+  border-radius:11px;padding:8px 14px;cursor:pointer;
+  font-size:.82rem;font-weight:600;color:#666;transition:all .15s;
+}
+.photo-trigger:hover{border-color:#999;color:#111;}
+
+.list-row{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 13px;border-radius:13px;
+  background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);
+  margin-bottom:7px;
+}
+.list-ava{
+  width:38px;height:38px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;
+}
+.list-ava img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+.list-name{font-size:.88rem;font-weight:700;}
+.list-sub{font-size:.72rem;color:#999;margin-top:1px;}
+.inline-inp{
+  font-family:inherit;font-size:.85rem;font-weight:500;
+  background:#F5F5F7;border:1.5px solid #007AFF;
+  border-radius:8px;padding:5px 9px;outline:none;color:#111;
+}
+.info-box{
+  background:#F5F5F7;border-radius:13px;
+  padding:12px 14px;font-size:.82rem;color:#666;line-height:1.55;margin-bottom:12px;
+}
+.empty{text-align:center;padding:28px 12px;color:#999;}
+.empty-icon{font-size:2rem;margin-bottom:6px;}
+.empty-msg{font-size:.85rem;font-weight:600;}
+
+/* ── MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,.18);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;animation:mbg .15s;
+}
+@keyframes mbg{from{opacity:0}to{opacity:1}}
+.modal{
+  background:#fff;border-radius:24px;
+  padding:26px 22px;width:100%;max-width:310px;
+  box-shadow:0 24px 64px rgba(0,0,0,.14);
+  text-align:center;
+  animation:mup .2s cubic-bezier(.4,0,.2,1);
+}
+@keyframes mup{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.modal-icon{font-size:2.4rem;margin-bottom:8px;}
+.modal-title{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;}
+.modal-sub{font-size:.82rem;color:#999;margin-top:3px;}
+.modal-pin{
+  display:block;width:100%;margin:14px 0;
+  text-align:center;font-size:1.8rem;letter-spacing:.4em;
+  font-family:inherit;padding:10px;
+  background:#F5F5F7;border:1.5px solid transparent;
+  border-radius:13px;outline:none;color:#111;
+}
+.modal-pin:focus{border-color:#007AFF;}
+.modal-inp{
+  display:block;width:100%;margin:14px 0;
+  font-family:inherit;font-size:1rem;text-align:center;padding:10px;
+  background:#F5F5F7;border:1.5px solid transparent;
+  border-radius:13px;outline:none;color:#111;
+}
+.modal-inp:focus{border-color:#007AFF;}
+.modal-btns{display:flex;gap:8px;justify-content:center;margin-top:16px;}
+.modal-ai{margin-top:12px;font-size:.82rem;color:#999;font-style:italic;min-height:1.2em;}
+.ai-dots{display:flex;gap:4px;justify-content:center;}
+.ai-dot{width:5px;height:5px;border-radius:50%;background:#C7C7CC;animation:aidot 1.2s infinite;}
+.ai-dot:nth-child(2){animation-delay:.2s;}
+.ai-dot:nth-child(3){animation-delay:.4s;}
+@keyframes aidot{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(14px);
+  background:rgba(17,17,17,.88);color:#fff;
+  padding:10px 20px;border-radius:100px;
+  font-size:.82rem;font-weight:600;z-index:500;
+  opacity:0;white-space:nowrap;max-width:88vw;
+  overflow:hidden;text-overflow:ellipsis;
+  transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .22s;
+  backdrop-filter:blur(10px);
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── BURST ── */
+.burst-wrap{
+  position:fixed;inset:0;z-index:450;
+  pointer-events:none;display:flex;align-items:center;justify-content:center;
+}
+.burst-pill{
+  background:#fff;border-radius:100px;
+  padding:14px 30px;font-size:1.1rem;font-weight:900;
+  box-shadow:0 8px 32px rgba(0,0,0,.13);
+  animation:burstp .5s cubic-bezier(.4,2,.55,1) forwards;
+}
+@keyframes burstp{0%{transform:scale(.25);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
+
+/* confetti */
+.cp{position:fixed;pointer-events:none;z-index:449;animation:cpfall linear forwards;}
+@keyframes cpfall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(106vh) rotate(540deg);opacity:0}}
+
+/* ── RESP ── */
+/* ── TABLET ── */
+@media(max-width:640px){
+  .kids-body{padding:12px 12px 40px;}
+  .parent-body{padding:12px 12px 40px;}
+}
+
+/* ── MOBILE ── */
+@media(max-width:480px){
+  .kids-grid{grid-template-columns:1fr;gap:10px;}
+  .who-btn{padding:14px 16px;}
+  .who-logo{font-size:2.4rem;}
+  .who-tagline{font-size:.95rem;margin-bottom:36px;}
+
+  /* karta dítěte kompaktnější */
+  .cc-header{padding:14px 14px 10px;gap:10px;}
+  .cc-ava{width:44px;height:44px;font-size:1.15rem;}
+  .cc-name{font-size:.95rem;}
+  .cc-stars-num{font-size:1.6rem;}
+  .cc-pips{padding:6px 14px 16px;}
+
+  /* úkoly — menší sloupce a padding */
+  .kids-body{padding:10px 10px 40px;}
+  .section-label{font-size:.62rem;}
+
+  /* obchod — sloupce pod sebe na malém mobilu při >1 dítěti se vejdou 2 vedle,
+     ale pod 380px stack */
+  .shop-columns{gap:8px;}
+
+  /* rodič taby scroll */
+  .parent-tabs{margin:10px 10px 0;}
+  .ptab{font-size:.72rem;padding:6px 8px;}
+
+  /* modaly */
+  .modal{max-width:100%;padding:22px 18px;}
+
+  /* formuláře */
+  .frow{gap:8px;}
+  .btn-primary{padding:11px 16px;}
+}
+
+/* ── SMALL MOBILE — stack shop columns ── */
+@media(max-width:380px){
+  .shop-columns{flex-direction:column;}
+  .shop-columns > div{width:100%!important;}
+  .cc-stars-num{font-size:1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ WHO ARE YOU ════════════════════════════════════ -->
+<div id="s-who" class="screen on">
+  <div class="who-logo">Lumio<span>.</span></div>
+  <div class="who-tagline">Bez práce nejsou koláče 🥧</div>
+  <div class="who-options">
+    <button class="who-btn who-btn-child" onclick="goKids()">
+      <div class="who-btn-icon" style="background:#FFF3E0;">🌟</div>
+      <div class="who-btn-text">
+        <span class="who-btn-title">Jsem dítě</span>
+        <span class="who-btn-sub">Splňuj úkoly a sbírej hvězdičky</span>
+      </div>
+    </button>
+    <button class="who-btn who-btn-parent" onclick="goParent()">
+      <div class="who-btn-icon" style="background:#F0F0F0;">⚙️</div>
+      <div class="who-btn-text">
+        <span class="who-btn-title">Jsem rodič</span>
+        <span class="who-btn-sub">Nastavení úkolů a odměn</span>
+      </div>
+    </button>
+  </div>
+</div>
+
+<!-- ══ KIDS HOME ══════════════════════════════════════ -->
+<div id="s-kids" class="screen">
+  <div class="kids-nav">
+    <div class="kids-nav-logo">Lumio<span>.</span></div>
+    <button class="back-btn" onclick="show('s-who')">← Zpět</button>
+  </div>
+  <div class="kids-body">
+    <div id="kids-grid" class="kids-grid" style="margin-bottom:20px;"></div>
+    <div id="kids-tasks-wrap"></div>
+  </div>
+</div>
+
+<!-- ══ PARENT ═════════════════════════════════════════ -->
+<div id="s-parent" class="screen">
+  <div class="parent-nav">
+    <div class="parent-nav-title">Lumio · Rodič</div>
+    <button class="back-btn" onclick="show('s-who')">← Zpět</button>
+  </div>
+  <div class="parent-tabs">
+    <button class="ptab on" onclick="ptab('children')">Děti</button>
+    <button class="ptab" onclick="ptab('tasks')">Úkoly</button>
+    <button class="ptab" onclick="ptab('rewards')">Odměny</button>
+    <button class="ptab" onclick="ptab('purchases')">Nákupy</button>
+    <button class="ptab" onclick="ptab('settings')">Nastavení</button>
+  </div>
+  <div class="parent-body">
+
+    <!-- CHILDREN -->
+    <div class="ptab-panel on" id="ptab-children">
+      <div class="pcard">
+        <div class="pcard-title">Přidat dítě</div>
+        <div class="fgroup"><div class="flabel">Jméno</div><input class="finput" id="p-cname" type="text" placeholder="Tomáš"></div>
+        <div class="fgroup"><div class="flabel">Barva</div><div class="palette" id="palette"></div></div>
+        <div class="fgroup">
+          <div class="flabel">Fotografie (volitelně)</div>
+          <label class="photo-trigger" for="p-cphoto">📷 Vybrat foto</label>
+          <input type="file" id="p-cphoto" accept="image/*" style="display:none">
+          <img id="p-cphoto-prev" style="width:40px;height:40px;border-radius:12px;object-fit:cover;margin-left:10px;vertical-align:middle;display:none;border:2px solid #E5E5EA;">
+        </div>
+        <button class="btn btn-primary" onclick="addChild()">Přidat dítě</button>
+      </div>
+      <div id="p-children-list"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="ptab-panel" id="ptab-tasks">
+      <div class="pcard">
+        <div class="pcard-title">Přidat úkol</div>
+        <div class="frow" style="flex-wrap:wrap;">
+          <div class="fgroup" style="flex:2;min-width:130px;"><div class="flabel">Název</div><input class="finput" id="p-tname" type="text" placeholder="Ustlat postel"></div>
+          <div class="fgroup" style="max-width:86px;"><div class="flabel">Hvězdičky</div><input class="finput" id="p-tpts" type="number" min="1" max="20" placeholder="3"></div>
+          <div class="fgroup" style="max-width:72px;"><div class="flabel">Ikona</div><input class="finput" id="p-ticon" type="text" placeholder="🛏️"></div>
+        </div>
+        <div class="fgroup">
+          <div class="flabel">Frekvence</div>
+          <select class="fselect" id="p-tfreq">
+            <option value="daily">Každý den</option>
+            <option value="weekly">Každý týden</option>
+            <option value="occasional">Nárazový</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addTask()" style="margin-top:4px;">Přidat úkol</button>
+      </div>
+      <div id="p-tasks-list"></div>
+    </div>
+
+    <!-- REWARDS -->
+    <div class="ptab-panel" id="ptab-rewards">
+      <div class="info-box">
+        Odměny se řadí automaticky do úrovní dle ceny hvězdiček:<br>
+        🥉 <b>Bronz</b> 1–9 · 🥈 <b>Stříbro</b> 10–24 · 🥇 <b>Zlato</b> 25–49 · 💎 <b>Diamant</b> 50+
+      </div>
+      <div class="pcard">
+        <div class="pcard-title">Přidat odměnu</div>
+        <div class="frow" style="flex-wrap:wrap;">
+          <div class="fgroup" style="flex:2;min-width:130px;"><div class="flabel">Název</div><input class="finput" id="p-rname" type="text" placeholder="Pohádka navíc"></div>
+          <div class="fgroup" style="max-width:86px;"><div class="flabel">Cena ⭐</div><input class="finput" id="p-rcost" type="number" min="1" placeholder="5"></div>
+          <div class="fgroup" style="max-width:72px;"><div class="flabel">Ikona</div><input class="finput" id="p-ricon" type="text" placeholder="📺"></div>
+        </div>
+        <div class="fgroup"><div class="flabel">Popis (volitelně)</div><input class="finput" id="p-rdesc" type="text" placeholder="Jeden díl navíc před spaním"></div>
+        <button class="btn btn-primary" onclick="addReward()" style="margin-top:4px;">Přidat odměnu</button>
+      </div>
+      <div id="p-rewards-list"></div>
+    </div>
+
+    <!-- PURCHASES -->
+    <div class="ptab-panel" id="ptab-purchases">
+      <div id="p-purchases-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="ptab-panel" id="ptab-settings">
+      <div class="pcard">
+        <div class="pcard-title">Claude API klíč</div>
+        <p style="font-size:.8rem;color:#999;margin-bottom:10px;">Gratulace a oznámení e-mailem při nákupu odměny.</p>
+        <div class="fgroup"><input class="finput" id="s-api" type="text" placeholder="sk-ant-..."></div>
+        <button class="btn btn-primary btn-sm" onclick="saveField('apiKey','s-api')">Uložit</button>
+      </div>
+      <div class="pcard">
+        <div class="pcard-title">Kontakt pro oznámení</div>
+        <div class="frow" style="flex-wrap:wrap;">
+          <div class="fgroup"><div class="flabel">E-mail</div><input class="finput" id="s-email" type="text" placeholder="email@seznam.cz"></div>
+          <div class="fgroup"><div class="flabel">Telefon</div><input class="finput" id="s-phone" type="text" placeholder="720159234"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveContact()">Uložit</button>
+      </div>
+      <div class="pcard">
+        <div class="pcard-title">PIN rodiče</div>
+        <p style="font-size:.8rem;color:#999;margin-bottom:10px;">Výchozí PIN: <b>1234</b></p>
+        <div class="fgroup" style="max-width:160px;"><input class="finput" id="s-pin" type="password" placeholder="Nový PIN" maxlength="8"></div>
+        <button class="btn btn-primary btn-sm" onclick="savePin()">Uložit PIN</button>
+      </div>
+      <div class="pcard">
+        <div class="pcard-title">Výchozí obsah</div>
+        <p style="font-size:.8rem;color:#999;margin-bottom:10px;">Doplní připravené úkoly a odměny (nepřepíše děti ani body).</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadDefaults()">Načíst výchozí úkoly a odměny</button>
+      </div>
+      <div class="pcard" style="border:1.5px solid #FECACA;">
+        <div class="pcard-title" style="color:#FF3B30;">Nebezpečná zóna</div>
+        <button class="btn btn-red btn-sm" onclick="resetAll()">Vymazat všechna data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// TIERS — based on star counts (not big numbers)
+// ════════════════════════════════════════════
+const TIERS=[
+  {key:'bronze', label:'Bronz',  icon:'🥉',min:0, max:9,  color:'#92400E',bg:'#FEF3C7'},
+  {key:'silver', label:'Stříbro',icon:'🥈',min:10,max:24, color:'#374151',bg:'#F3F4F6'},
+  {key:'gold',   label:'Zlato',  icon:'🥇',min:25,max:49, color:'#78350F',bg:'#FEF9C3'},
+  {key:'diamond',label:'Diamant',icon:'💎',min:50,max:Infinity,color:'#1D4ED8',bg:'#DBEAFE'},
+];
+const tierOf=s=>TIERS.find(t=>s>=t.min&&s<=t.max)||TIERS[0];
+const tierIdx=s=>TIERS.findIndex(t=>s>=t.min&&s<=t.max);
+
+const COLORS=['#7CB9E8','#F4A7B9','#98D8A5','#FFD580','#C3A6E8','#F4A76F'];
+const PASTELS=['#EBF5FF','#FFF0F5','#F0FFF4','#FFFBEB','#F5F0FF','#FFF4EC'];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const SKEY='lumio';
+let D={};
+
+function save(){localStorage.setItem(SKEY,JSON.stringify(D));}
+
+function load(){
+  try{
+    const raw=localStorage.getItem(SKEY);
+    if(raw){D=JSON.parse(raw);}
+  }catch(e){}
+  // ensure structure without wiping existing data
+  if(!Array.isArray(D.children))  D.children=[];
+  if(!Array.isArray(D.tasks)||D.tasks.length===0)    D.tasks=seedTasks();
+  if(!Array.isArray(D.rewards)||D.rewards.length===0) D.rewards=seedRewards();
+  if(!Array.isArray(D.purchases)) D.purchases=[];
+  if(!D.contact) D.contact={email:'nesvadbova.andrea@seznam.cz',phone:'720159234'};
+  if(!D.apiKey)  D.apiKey='';
+  if(!D.pin)     D.pin='1234';
+  if(!D.checked) D.checked={};
+  save();
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function seedTasks(){return[
+  // KAŽDÝ DEN — péče o sebe
+  {id:uid(),icon:'🛌',name:'Ustlat postel',              pts:2, freq:'daily'},
+  {id:uid(),icon:'🚿',name:'Sprcha bez připomínání',     pts:2, freq:'daily'},
+  {id:uid(),icon:'🦷',name:'Vyčistit zuby ráno i večer', pts:2, freq:'daily'},
+  {id:uid(),icon:'👕',name:'Obléct se sám/sama',         pts:1, freq:'daily'},
+  {id:uid(),icon:'🌙',name:'Jít spát včas',              pts:2, freq:'daily'},
+  {id:uid(),icon:'👟',name:'Uklidit boty na místo',      pts:1, freq:'daily'},
+  {id:uid(),icon:'🎒',name:'Připravit věci do školy',    pts:3, freq:'daily'},
+  // KAŽDÝ DEN — domácí práce
+  {id:uid(),icon:'🧸',name:'Uklidit hračky',             pts:3, freq:'daily'},
+  {id:uid(),icon:'🥄',name:'Odnést talíř po jídle',      pts:1, freq:'daily'},
+  {id:uid(),icon:'🍽',name:'Prostřít stůl',              pts:2, freq:'daily'},
+  {id:uid(),icon:'🗑',name:'Vysypat koš v pokoji',       pts:2, freq:'daily'},
+  {id:uid(),icon:'🧴',name:'Uklidit koupelnu po sobě',   pts:2, freq:'daily'},
+  // KAŽDÝ TÝDEN — domácí práce
+  {id:uid(),icon:'🧹',name:'Zamést nebo vysát',           pts:5, freq:'weekly'},
+  {id:uid(),icon:'🫧',name:'Pomoci s nádobím',            pts:6, freq:'weekly'},
+  {id:uid(),icon:'🌿',name:'Zalít květiny',               pts:3, freq:'weekly'},
+  {id:uid(),icon:'🐾',name:'Nakrmit mazlíčka',            pts:3, freq:'weekly'},
+  {id:uid(),icon:'🧺',name:'Dát prádlo do koše',          pts:2, freq:'weekly'},
+  {id:uid(),icon:'🛒',name:'Pomoci s nákupem',            pts:5, freq:'weekly'},
+  {id:uid(),icon:'🪟',name:'Utřít prach v pokoji',        pts:4, freq:'weekly'},
+  {id:uid(),icon:'♻️',name:'Odnést tříděný odpad',       pts:4, freq:'weekly'},
+  // KAŽDÝ TÝDEN — péče o mladšího sourozence
+  {id:uid(),icon:'👶',name:'Hrát si s mladším sourozencem', pts:5, freq:'weekly'},
+  {id:uid(),icon:'📖',name:'Přečíst pohádku mladšímu',   pts:5, freq:'weekly'},
+  {id:uid(),icon:'🎨',name:'Tvořit společně s mladším',  pts:4, freq:'weekly'},
+  // NÁRAZOVÉ
+  {id:uid(),icon:'📚',name:'Číst si 15 minut',            pts:3, freq:'occasional'},
+  {id:uid(),icon:'🧩',name:'Složit puzzle nebo hrát společenskou hru', pts:4, freq:'occasional'},
+  {id:uid(),icon:'✉️',name:'Napsat nebo nakreslit přání', pts:5, freq:'occasional'},
+  {id:uid(),icon:'🌱',name:'Pomoci na zahradě',           pts:6, freq:'occasional'},
+  {id:uid(),icon:'🐕',name:'Jít ven se psem',            pts:5, freq:'occasional'},
+  {id:uid(),icon:'🎁',name:'Uklidit pokoj do velké čistoty', pts:8, freq:'occasional'},
+  {id:uid(),icon:'🍳',name:'Pomoct uvařit nebo upéct',    pts:7, freq:'occasional'},
+];}
+
+function seedRewards(){return[
+  // BRONZ (1-9)
+  {id:uid(),icon:'📺',name:'Večerníček navíc',cost:5,desc:'Jeden díl navíc před spaním',tier:'bronze'},
+  {id:uid(),icon:'🍬',name:'Sladkost dle výběru',cost:6,desc:'Jedna oblíbená sladkost',tier:'bronze'},
+  {id:uid(),icon:'🎨',name:'Tvoření a malování',cost:7,desc:'Barvy, modelína nebo papíry',tier:'bronze'},
+  {id:uid(),icon:'📖',name:'Pohádka navíc',cost:5,desc:'Jedna extra pohádka před spaním',tier:'bronze'},
+  {id:uid(),icon:'🧩',name:'Hra s tátou nebo mámou',cost:8,desc:'Tvá oblíbená hra',tier:'bronze'},
+  {id:uid(),icon:'🎵',name:'Písničky na přání',cost:5,desc:'Playlist dle tvého výběru',tier:'bronze'},
+  {id:uid(),icon:'🛁',name:'Bublinková koupel',cost:7,desc:'Koupel s pěnou a hračkami',tier:'bronze'},
+  {id:uid(),icon:'🌟',name:'Zůstat déle vzhůru',cost:6,desc:'Půl hodiny navíc před spaním',tier:'bronze'},
+  {id:uid(),icon:'🖍',name:'Nová knížka nebo omalovánky',cost:9,desc:'Vyber si v obchodě',tier:'bronze'},
+  {id:uid(),icon:'🎲',name:'Oblíbená společenská hra',cost:8,desc:'Hrajeme co chceš ty',tier:'bronze'},
+  // STŘÍBRO (10-24)
+  {id:uid(),icon:'🍕',name:'Pizza k večeři',cost:12,desc:'Tvá oblíbená pizza',tier:'silver'},
+  {id:uid(),icon:'🎮',name:'Hodina u hry',cost:15,desc:'Tablet, konzole nebo PC',tier:'silver'},
+  {id:uid(),icon:'🎬',name:'Rodinné kino doma',cost:18,desc:'Vyber film pro celou rodinu',tier:'silver'},
+  {id:uid(),icon:'🍔',name:'Hamburger k obědu',cost:12,desc:'Tvůj oblíbený burger',tier:'silver'},
+  {id:uid(),icon:'🌮',name:'Tvoje oblíbené jídlo',cost:14,desc:'Cokoliv si vybereš k večeři',tier:'silver'},
+  {id:uid(),icon:'🎁',name:'Malé překvapení',cost:18,desc:'Malý dáreček do 50 Kč',tier:'silver'},
+  {id:uid(),icon:'🏃',name:'Sportovní odpoledne',cost:15,desc:'Tvůj oblíbený sport s rodiči',tier:'silver'},
+  {id:uid(),icon:'🧁',name:'Pečeme společně',cost:13,desc:'Cupcaky, sušenky nebo dort',tier:'silver'},
+  {id:uid(),icon:'🎪',name:'Cirkus nebo divadlo',cost:20,desc:'Výlet na představení',tier:'silver'},
+  {id:uid(),icon:'🚲',name:'Výlet na kole',cost:16,desc:'Projížďka s rodičem',tier:'silver'},
+  {id:uid(),icon:'🌈',name:'Den bez domácích prací',cost:20,desc:'Celý den bez povinností',tier:'silver'},
+  {id:uid(),icon:'📱',name:'Extra hodina obrazovky',cost:12,desc:'Navíc k normálnímu času',tier:'silver'},
+  // ZLATO (25-49)
+  {id:uid(),icon:'🛝',name:'Výlet na hřiště',cost:25,desc:'Celé odpoledne venku',tier:'gold'},
+  {id:uid(),icon:'🍦',name:'Zmrzlinárna',cost:28,desc:'Kopečky dle výběru',tier:'gold'},
+  {id:uid(),icon:'🏊',name:'Bazén nebo aquapark',cost:35,desc:'Výlet s rodiči',tier:'gold'},
+  {id:uid(),icon:'🎳',name:'Bowling nebo laser game',cost:38,desc:'Hodina zábavy s rodinou',tier:'gold'},
+  {id:uid(),icon:'🍿',name:'Kino v kině',cost:40,desc:'Skutečné kino s popcornem',tier:'gold'},
+  {id:uid(),icon:'🏕',name:'Nocování ve stanu',cost:45,desc:'Noc venku nebo na zahradě',tier:'gold'},
+  {id:uid(),icon:'🎠',name:'Lunapark nebo atrakce',cost:42,desc:'Projížďky a atrakce',tier:'gold'},
+  {id:uid(),icon:'🧗',name:'Lezecká stěna',cost:35,desc:'Bouldering nebo lezení',tier:'gold'},
+  {id:uid(),icon:'🎯',name:'Střelnice nebo minigolf',cost:30,desc:'Zábava s rodiči',tier:'gold'},
+  {id:uid(),icon:'🚀',name:'Hvězdárna nebo muzeum',cost:35,desc:'Vzdělávací výlet',tier:'gold'},
+  {id:uid(),icon:'🎤',name:'Karaoke doma',cost:25,desc:'Zpíváme co chceš ty',tier:'gold'},
+  // DIAMANT (50+)
+  {id:uid(),icon:'🎂',name:'Den přání',cost:50,desc:'Celý den přesně podle tebe',tier:'diamond'},
+  {id:uid(),icon:'🧸',name:'Dárek z obchodu',cost:55,desc:'Jedna věc do 200 Kč',tier:'diamond'},
+  {id:uid(),icon:'🎡',name:'Zábavní park',cost:70,desc:'Velký výlet pro celou rodinu',tier:'diamond'},
+  {id:uid(),icon:'🏖',name:'Výlet k vodě',cost:75,desc:'Jezero, řeka nebo moře',tier:'diamond'},
+  {id:uid(),icon:'🎸',name:'Nový kroužek na zkoušku',cost:60,desc:'Hudba, tanec, sport — co chceš',tier:'diamond'},
+  {id:uid(),icon:'🧭',name:'Dobrodružný výlet',cost:85,desc:'Překvapení od rodičů',tier:'diamond'},
+  {id:uid(),icon:'🎿',name:'Lyže nebo snowboard',cost:90,desc:'Den na sjezdovce',tier:'diamond'},
+  {id:uid(),icon:'🎉',name:'Párty s kamarády',cost:100,desc:'Oslava dle tvého výběru',tier:'diamond'},
+];}
+
+// ════════════════════════════════════════════
+// HELPERS — star dots
+// ════════════════════════════════════════════
+function starDots(count, color, max=10, showNum=false){
+  const show=Math.min(count,max);
+  let dots='';
+  for(let i=0;i<max;i++){
+    const fill = i<show ? color : '#D8D8DE';
+    dots+=`<circle cx="${5+i*10}" cy="5" r="4" fill="${fill}"/>`;
+  }
+  const w=max*10;
+  let h=`<svg width="${w}" height="10" viewBox="0 0 ${w} 10" style="display:block;flex-shrink:0;">${dots}</svg>`;
+  if(count>max) h+=`<span class="sdot-more">+${count-max}</span>`;
+  return h;
+}
+
+function rewardStarDots(cost,childStars,color){
+  const max=Math.min(cost,12);
+  const filled=Math.min(childStars,cost);
+  const filledShow=Math.round((filled/cost)*max);
+  let dots='';
+  for(let i=0;i<max;i++){
+    const fill = i<filledShow ? color : '#D8D8DE';
+    dots+=`<circle cx="${5+i*10}" cy="5" r="4" fill="${fill}"/>`;
+  }
+  const w=max*10;
+  let h=`<svg width="${w}" height="10" viewBox="0 0 ${w} 10" style="display:block;flex-shrink:0;">${dots}</svg>`;
+  if(cost>12) h+=`<span class="sdot-more">${cost}⭐</span>`;
+  return h;
+}
+
+// ════════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════════
+let _ac;
+function getAc(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
+function note(f,t,d,type='sine',v=0.16){
+  const ctx=getAc(),o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.value=f;
+  const n=ctx.currentTime+t;
+  g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(v,n+.04);g.gain.linearRampToValueAtTime(0,n+d);
+  o.start(n);o.stop(n+d+.05);
+}
+const sfxUndo=()=>{note(300,0,.1,'sawtooth',.12);note(200,.12,.18,'sawtooth',.1);};
+const sfxBuy =()=>{
+  // slavnostní jemná fanfára, měkká
+  softTone(659.25,0.00,0.5,0.18); // E5
+  softTone(783.99,0.10,0.5,0.18); // G5
+  softTone(1046.5,0.20,0.6,0.20); // C6
+  softTone(1318.5,0.32,0.9,0.20); // E6 finále
+};
+
+// Jemná moderní znělka — měkký zvonkohra/marimba tón, ne 8-bit
+function softTone(freq, start, dur, vol=0.22){
+  const ctx=getAc();
+  const o=ctx.createOscillator();
+  const o2=ctx.createOscillator();
+  const g=ctx.createGain();
+  const lp=ctx.createBiquadFilter();
+  lp.type='lowpass'; lp.frequency.value=2200; // odfiltruje ostré vyšší harmonické
+  o.type='sine'; o.frequency.value=freq;
+  o2.type='sine'; o2.frequency.value=freq*2; o2.detune.value=4; // jemný lesk oktávu výš
+  const g2=ctx.createGain(); g2.gain.value=0.28;
+  o.connect(g); o2.connect(g2); g2.connect(g);
+  g.connect(lp); lp.connect(ctx.destination);
+  const t=ctx.currentTime+start;
+  // měkký zvonový obrys: rychlý náběh, pozvolné doznění
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+  o.start(t); o2.start(t);
+  o.stop(t+dur+0.05); o2.stop(t+dur+0.05);
+}
+
+function sfxOk(){
+  // Pentatonická vzestupná fráze — vždy libozvučná, moderní, jemná
+  // C – E – G – A – (výš) C, s dozníváním
+  softTone(523.25, 0.00, 0.55, 0.20); // C5
+  softTone(659.25, 0.09, 0.55, 0.19); // E5
+  softTone(783.99, 0.18, 0.60, 0.20); // G5
+  softTone(880.00, 0.27, 0.65, 0.18); // A5
+  softTone(1046.5, 0.38, 0.90, 0.22); // C6 – finální, delší doznění
+}
+
+// ── SPEECH (Web Speech API, Czech) ──
+function speak(text){
+  if(!('speechSynthesis'in window))return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='cs-CZ';u.rate=0.95;u.pitch=1.05;
+  const voices=window.speechSynthesis.getVoices();
+  const cz=voices.find(v=>v.lang&&v.lang.startsWith('cs'));
+  if(cz)u.voice=cz;
+  window.speechSynthesis.speak(u);
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+let _tt;
+function toast(msg,dur=3200){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('on');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),dur);
+}
+
+// ════════════════════════════════════════════
+// CONFETTI + BURST
+// ════════════════════════════════════════════
+const CC=['#7CB9E8','#F4A7B9','#98D8A5','#FFD580','#C3A6E8','#F4A76F','#FBBF24'];
+function confetti(n=28){
+  for(let i=0;i<n;i++){
+    const el=document.createElement('div');el.className='cp';
+    const s=5+Math.random()*8;
+    el.style.cssText=`left:${Math.random()*100}vw;top:-10px;width:${s}px;height:${s}px;
+      background:${CC[Math.floor(Math.random()*CC.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${1+Math.random()*1.1}s;animation-delay:${Math.random()*.3}s;`;
+    document.body.appendChild(el);setTimeout(()=>el.remove(),2500);
+  }
+}
+function burst(msg){
+  const el=document.createElement('div');el.className='burst-wrap';
+  el.innerHTML=`<div class="burst-pill">${msg}</div>`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1700);
+}
+
+// ════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════
+let _mcb=null;
+function mkBg(inner){
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<div class="modal">${inner}</div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click',e=>{if(e.target===bg)bg.remove();});
+  return bg;
+}
+function pinModal(cb){
+  _mcb=cb;
+  const bg=mkBg(`
+    <div class="modal-icon">🔐</div>
+    <div class="modal-title">Rodičovský panel</div>
+    <div class="modal-sub">Zadej PIN</div>
+    <input class="modal-pin" id="m-pin" type="password" maxlength="8" placeholder="· · · ·">
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" id="m-no">Zrušit</button>
+      <button class="btn btn-primary btn-sm" id="m-ok">Vstoupit</button>
+    </div>`);
+  const inp=bg.querySelector('#m-pin');
+  setTimeout(()=>inp.focus(),80);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')bg.querySelector('#m-ok').click();});
+  bg.querySelector('#m-no').onclick=()=>bg.remove();
+  bg.querySelector('#m-ok').onclick=()=>{const v=inp.value;bg.remove();_mcb&&_mcb(v);};
+}
+function confirmModal(title,sub,cb){
+  _mcb=cb;
+  const bg=mkBg(`
+    <div class="modal-title">${title}</div>
+    <div class="modal-sub" style="margin-top:4px;">${sub}</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" id="m-no">Zrušit</button>
+      <button class="btn btn-primary btn-sm" id="m-yes">Potvrdit</button>
+    </div>`);
+  bg.querySelector('#m-no').onclick=()=>{bg.remove();_mcb&&_mcb(false);};
+  bg.querySelector('#m-yes').onclick=()=>{bg.remove();_mcb&&_mcb(true);};
+}
+function inputModal(title,sub,type,def,cb){
+  _mcb=cb;
+  const bg=mkBg(`
+    <div class="modal-title">${title}</div>
+    <div class="modal-sub" style="margin-top:4px;">${sub}</div>
+    <input class="modal-inp" id="m-inp" type="${type}" value="${String(def).replace(/"/g,'&quot;')}">
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" id="m-no">Zrušit</button>
+      <button class="btn btn-primary btn-sm" id="m-ok">Uložit</button>
+    </div>`);
+  const inp=bg.querySelector('#m-inp');
+  setTimeout(()=>{inp.focus();inp.select();},80);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')bg.querySelector('#m-ok').click();});
+  bg.querySelector('#m-no').onclick=()=>bg.remove();
+  bg.querySelector('#m-ok').onclick=()=>{const v=inp.value;bg.remove();_mcb&&_mcb(v);};
+}
+function celebModal(icon,title,sub){
+  const bg=mkBg(`
+    <div class="modal-icon">${icon}</div>
+    <div class="modal-title">${title}</div>
+    <div class="modal-sub">${sub}</div>
+    <div class="modal-ai" id="m-ai">
+      <div class="ai-dots"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div>
+    </div>
+    <div class="modal-btns"><button class="btn btn-ghost btn-sm" id="m-close">Zavřít</button></div>`);
+  bg.querySelector('#m-close').onclick=()=>bg.remove();
+  setTimeout(()=>{if(bg.isConnected)bg.remove();},9000);
+  return bg;
+}
+
+// ════════════════════════════════════════════
+// CLAUDE
+// ════════════════════════════════════════════
+async function claude(prompt){
+  if(!D.apiKey)return'';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':D.apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:220,messages:[{role:'user',content:prompt}]}),
+    });
+    const j=await r.json();return j.content?.[0]?.text||'';
+  }catch(e){return'';}
+}
+
+// ════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0,0);
+}
+
+function goKids(){
+  renderKids();
+  show('s-kids');
+}
+
+function goParent(){
+  pinModal(pin=>{
+    if(pin!==D.pin){toast('Špatný PIN.');return;}
+    show('s-parent');
+    ptab('children');
+  });
+}
+
+// ════════════════════════════════════════════
+// CHECKED TODAY logic
+// ════════════════════════════════════════════
+function todayStr(){
+  const d=new Date();
+  return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function weekStr(){
+  const d=new Date();
+  const day=d.getDay()||7;
+  const mon=new Date(d);mon.setDate(d.getDate()-day+1);
+  return`w${mon.getFullYear()}-${mon.getMonth()}-${mon.getDate()}`;
+}
+function periodKey(freq){
+  if(freq==='daily')return todayStr();
+  if(freq==='weekly')return weekStr();
+  return'occ';
+}
+function isChecked(cid,tid,freq){
+  if(!D.checked[cid])return false;
+  const pk=periodKey(freq);
+  return D.checked[cid][pk+tid]===true;
+}
+function setChecked(cid,tid,freq,val){
+  if(!D.checked[cid])D.checked[cid]={};
+  const pk=periodKey(freq);
+  if(val)D.checked[cid][pk+tid]=true;
+  else delete D.checked[cid][pk+tid];
+}
+
+// ════════════════════════════════════════════
+// KIDS SCREEN
+// ════════════════════════════════════════════
+let kidsTab='tasks'; // 'tasks' | 'shop' | 'history', per child shown below grid
+
+function renderKids(){
+  renderKidsGrid();
+  renderKidsTasks();
+}
+
+function renderKidsGrid(){
+  const el=document.getElementById('kids-grid');
+  if(!D.children.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-msg">Přidej děti v Nastavení pro rodiče</div></div>`;
+    return;
+  }
+  el.innerHTML=D.children.map(c=>childCardHTML(c)).join('');
+}
+
+function childCardHTML(c){
+  const color=COLORS[c.colorIdx||0];
+  const pastel=PASTELS[c.colorIdx||0];
+  const tier=tierOf(c.stars);
+  const ti=tierIdx(c.stars);
+  const nextT=TIERS[ti+1];
+  const pct=nextT?Math.min(100,Math.round((c.stars-tier.min)/(nextT.min-tier.min)*100)):100;
+  const filled=Math.min(c.stars,20);
+  let pipCircles='';
+  const perRow=10;
+  for(let i=0;i<20;i++){
+    const row=Math.floor(i/perRow), col=i%perRow;
+    pipCircles+=`<circle cx="${8+col*15}" cy="${8+row*16}" r="5" fill="${i<filled?color:'#E8E8ED'}"/>`;
+  }
+  const pips=`<svg width="158" height="32" viewBox="0 0 158 32" style="display:block;max-width:100%;">${pipCircles}</svg>`;
+  return`
+  <div class="child-card">
+    <div class="cc-header">
+      <div class="cc-ava" style="background:${color}">
+        ${c.photo?`<img src="${c.photo}" alt="">`:`${c.name[0].toUpperCase()}`}
+      </div>
+      <div style="flex:1">
+        <div class="cc-name">${c.name}</div>
+        <div class="cc-tier" style="background:${tier.bg};color:${tier.color}">${tier.icon} ${tier.label}</div>
+      </div>
+      <div>
+        <div class="cc-stars-num" style="color:${color}">${c.stars}</div>
+        <div class="cc-stars-label">hvězdiček</div>
+      </div>
+    </div>
+    <div class="cc-pips">${pips}</div>
+    <div class="cc-progress">
+      ${nextT?`
+        <div class="cc-prog-label"><span>Do ${nextT.icon} ${nextT.label}</span><span>${Math.max(0,nextT.min-c.stars)} chybí</span></div>
+        <div class="cc-prog-track"><div class="cc-prog-fill" style="width:${pct}%;background:${color}"></div></div>
+      `:`<div style="font-size:.78rem;font-weight:700;color:${tier.color}">💎 Nejvyšší úroveň!</div>`}
+    </div>
+    ${(()=>{
+      const pending=(c.purchases||[]).filter(p=>!p.redeemed);
+      if(!pending.length)return'';
+      return`<div style="padding:0 16px 16px;">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#999;margin-bottom:6px;">🎁 Koupené odměny</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${pending.map(p=>`<div style="display:flex;align-items:center;gap:4px;background:${pastel};border:1px solid ${color}33;border-radius:100px;padding:4px 10px 4px 8px;font-size:.75rem;font-weight:600;">
+            <span style="font-size:.95rem;">${p.icon}</span>${p.name}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    })()}
+  </div>`;
+}
+
+// ── TASKS (shared for all children, columns per child) ──
+function renderKidsTasks(){
+  const wrap=document.getElementById('kids-tasks-wrap');
+  if(!D.children.length){wrap.innerHTML='';return;}
+
+  const freqGroups=[
+    {key:'daily',label:'Každý den 📅'},
+    {key:'weekly',label:'Každý týden 📆'},
+    {key:'occasional',label:'Nárazové ⚡'},
+  ];
+
+  let html=`<div class="child-tabs" style="margin-bottom:14px;">
+    <button class="ctab ${kidsTab==='tasks'?'on':''}" onclick="switchKidsTab('tasks')">Úkoly</button>
+    <button class="ctab ${kidsTab==='shop'?'on':''}" onclick="switchKidsTab('shop')">Odměny</button>
+    <button class="ctab ${kidsTab==='history'?'on':''}" onclick="switchKidsTab('history')">Historie</button>
+  </div>`;
+
+  if(kidsTab==='tasks'){
+    freqGroups.forEach(fg=>{
+      const tasks=D.tasks.filter(t=>t.freq===fg.key);
+      if(!tasks.length)return;
+      html+=`<div class="tasks-section" style="margin-bottom:14px;">
+        <div class="section-label">${fg.label}</div>
+        <div class="tasks-card">
+          <!-- header row with child names -->
+          <div style="display:flex;border-bottom:1px solid #F0F0F0;background:#FAFAFA;">
+            <div style="flex:1;padding:8px 16px;font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#999;">Úkol</div>
+            ${D.children.map(c=>{
+              const color=COLORS[c.colorIdx||0];
+              return`<div style="width:56px;text-align:center;padding:8px 4px;font-size:.68rem;font-weight:700;color:${color};border-left:1px solid #F0F0F0;flex-shrink:0;">${c.name}</div>`;
+            }).join('')}
+          </div>
+          ${tasks.map(t=>{
+            const tSpeak=`${t.name}, za ${t.pts} ${t.pts===1?'hvězdičku':t.pts>=2&&t.pts<=4?'hvězdičky':'hvězdiček'}`;
+            return`
+          <div style="display:flex;align-items:stretch;border-bottom:1px solid #F5F5F7;" class="task-master">
+            <div class="task-row-info" style="flex:1;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:1.2rem;width:24px;text-align:center;cursor:pointer;" onclick="speak('${tSpeak.replace(/'/g,"\\'")}')">${t.icon}</span>
+              <div style="flex:1;min-width:0;cursor:pointer;" onclick="speak('${tSpeak.replace(/'/g,"\\'")}')">
+                <div class="task-name" style="font-size:.88rem;font-weight:600;">${t.name} <span style="color:#F5A623;font-weight:800;">+${t.pts}</span></div>
+                <div class="task-stars-dots" style="margin-top:4px;">${starDots(t.pts,'#FFC300',10)}</div>
+              </div>
+            </div>
+            ${D.children.map(c=>{
+              const color=COLORS[c.colorIdx||0];
+              const done=isChecked(c.id,t.id,t.freq);
+              return`<div onclick="toggleTask('${c.id}','${t.id}')"
+                style="width:56px;border-left:1px solid #F5F5F7;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;flex-shrink:0;"
+                onmousedown="this.style.background='#F8F8F8'" onmouseup="this.style.background=''" ontouchstart="this.style.background='#F8F8F8'" ontouchend="this.style.background=''">
+                <div class="task-check ${done?'on':''}" style="${done?`background:${color};border-color:${color}`:''}">${done?'✓':''}</div>
+              </div>`;
+            }).join('')}
+          </div>`}).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  if(kidsTab==='shop'){
+    // side-by-side columns: one per child
+    // header row
+    const colW=D.children.length>1?`calc(${100/D.children.length}% - 6px)`:'100%';
+    // per tier, show all children side by side
+    html+=`<div class="shop-columns" style="display:flex;gap:12px;align-items:flex-start;">`;
+    D.children.forEach(c=>{
+      const color=COLORS[c.colorIdx||0];
+      html+=`<div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="width:28px;height:28px;border-radius:9px;background:${color};display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;color:#fff;flex-shrink:0;">
+            ${c.photo?`<img src="${c.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" alt="">`:`${c.name[0]}`}
+          </div>
+          <div>
+            <div style="font-size:.88rem;font-weight:800;">${c.name}</div>
+            <div style="font-size:.7rem;color:#999;font-weight:600;">${c.stars} ⭐</div>
+          </div>
+        </div>
+        ${TIERS.map(tier=>{
+          const rewards=D.rewards.filter(r=>r.tier===tier.key);
+          if(!rewards.length)return'';
+          const locked=c.stars<tier.min;
+          return`<div style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:10px;background:${tier.bg};margin-bottom:6px;">
+              <span style="font-size:.85rem;">${tier.icon}</span>
+              <span style="font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${tier.color};">${tier.label}</span>
+              ${locked?`<span style="margin-left:auto;font-size:.65rem;color:${tier.color};opacity:.7;">od ${tier.min}⭐</span>`:''}
+            </div>
+            ${rewards.map(r=>{
+              const canBuy=!locked&&c.stars>=r.cost;
+              const speakText=`${r.name}, za ${r.cost} ${r.cost===1?'hvězdičku':r.cost>=2&&r.cost<=4?'hvězdičky':'hvězdiček'}`;
+              return`<div style="background:#fff;border-radius:14px;padding:11px 12px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);${locked?'opacity:.35':''}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;" onclick="speak('${speakText.replace(/'/g,"\\'")}')">
+                  <span style="font-size:1.2rem;">${r.icon}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+                    ${r.desc?`<div style="font-size:.68rem;color:#999;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.desc}</div>`:''}
+                  </div>
+                </div>
+                <div style="display:flex;gap:1px;flex-wrap:wrap;margin-bottom:6px;">${rewardStarDots(r.cost,c.stars,color)}</div>
+                ${locked?'':(canBuy
+                  ?`<button class="r-buy" style="background:${color};width:100%;justify-content:center;" onclick="buyReward('${c.id}','${r.id}')">Koupit</button>`
+                  :`<button class="r-buy" style="width:100%;justify-content:center;" disabled>ještě ${r.cost-c.stars}⭐</button>`)}
+              </div>`;
+            }).join('')}
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(kidsTab==='history'){
+    D.children.forEach(c=>{
+      const purchases=(c.purchases||[]);
+      html+=`<div style="margin-bottom:20px;">
+        <div class="section-label">${c.name}</div>
+        ${!purchases.length
+          ?`<div class="empty" style="padding:16px 0"><div class="empty-msg">Zatím žádné odměny</div></div>`
+          :purchases.map(p=>`
+          <div class="purchase-pill${p.redeemed?' redeemed':''}">
+            <div class="p-icon">${p.icon}</div>
+            <div class="p-info">
+              <div class="p-name">${p.name}</div>
+              <div class="p-meta">${p.cost} ⭐ · ${p.when}</div>
+            </div>
+            <div class="p-badge${p.redeemed?' used':''}">${p.redeemed?'✓ Uplatněno':'Čeká'}</div>
+          </div>`).join('')}
+      </div>`;
+    });
+  }
+
+  wrap.innerHTML=html;
+}
+
+function switchKidsTab(tab){
+  kidsTab=tab;
+  renderKidsTasks();
+}
+
+function toggleTask(cid,tid){
+  const c=D.children.find(x=>x.id===cid);
+  const t=D.tasks.find(x=>x.id===tid);
+  if(!c||!t)return;
+  // Always just add points and show burst — no persistent check state
+  c.stars+=t.pts;
+  save();sfxOk();confetti(24);renderKids();
+  burst(`+${t.pts} ⭐ ${c.name}!`);
+  toast(`${c.name}: +${t.pts} ⭐ za „${t.name}"`);
+  if(D.apiKey){
+    claude(`Dítě ${c.name} splnilo úkol „${t.name}" a získalo ${t.pts} hvězdiček (celkem ${c.stars}). 1 věta pochvaly česky s emoji, pro malé dítě.`)
+      .then(msg=>{if(msg)toast(msg,4500);});
+  }
+}
+
+async function buyReward(cid,rid){
+  const c=D.children.find(x=>x.id===cid);
+  const r=D.rewards.find(x=>x.id===rid);
+  if(!c||!r)return;
+  if(c.stars<r.cost){toast(`${c.name} potřebuje ještě ${r.cost-c.stars} ⭐`);return;}
+  confirmModal(
+    `Koupit ${r.icon} ${r.name}?`,
+    `Odečte se ${r.cost} hvězdiček — zbyde ${c.stars-r.cost} ⭐`,
+    async ok=>{
+      if(!ok)return;
+      c.stars-=r.cost;
+      const purchase={id:uid(),childId:cid,childName:c.name,icon:r.icon,name:r.name,cost:r.cost,when:new Date().toLocaleString('cs-CZ'),redeemed:false};
+      if(!c.purchases)c.purchases=[];
+      c.purchases.unshift(purchase);
+      D.purchases.unshift(purchase);
+      // in-app notification flag for parent
+      if(!D.notifications)D.notifications=[];
+      D.notifications.unshift({id:purchase.id,text:`${c.name} si koupil/a ${r.icon} ${r.name} za ${r.cost} ⭐`,when:purchase.when,seen:false});
+      save();sfxBuy();confetti(55);renderKids();
+
+      const bg=celebModal(r.icon,`${c.name} si koupil/a!`,`${r.name} za ${r.cost} ⭐`);
+
+      // SMS link button
+      const smsText=`Lumio: ${c.name} si koupil/a odměnu "${r.name}" za ${r.cost} hvězdiček (${purchase.when}).`;
+      const phone=(D.contact.phone||'').replace(/\s/g,'');
+      const btnRow=bg.querySelector('.modal-btns');
+      if(btnRow&&phone){
+        const smsBtn=document.createElement('a');
+        smsBtn.href=`sms:${phone}?&body=${encodeURIComponent(smsText)}`;
+        smsBtn.className='btn btn-primary btn-sm';
+        smsBtn.textContent='📱 Poslat SMS rodiči';
+        smsBtn.style.textDecoration='none';
+        btnRow.insertBefore(smsBtn,btnRow.firstChild);
+      }
+
+      toast(`🎉 ${r.icon} ${r.name}!`);
+      if(D.apiKey){
+        const msg=await claude(`Dítě ${c.name} si koupilo odměnu „${r.name}" za ${r.cost} hvězdiček (zbývá ${c.stars}). Napiš 2 věty veselé gratulace česky s emoji pro malé dítě.`);
+        const ai=bg.querySelector('#m-ai');
+        if(ai&&bg.isConnected)ai.textContent=msg||'';
+      }else{
+        const ai=bg.querySelector('#m-ai');if(ai)ai.textContent='';
+      }
+    }
+  );
+}
+
+// ════════════════════════════════════════════
+// PARENT
+// ════════════════════════════════════════════
+function ptab(name){
+  const names=['children','tasks','rewards','purchases','settings'];
+  document.querySelectorAll('.ptab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
+  document.querySelectorAll('.ptab-panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('ptab-'+name).classList.add('on');
+  if(name==='children')renderPChildren();
+  if(name==='tasks')   renderPTasks();
+  if(name==='rewards') renderPRewards();
+  if(name==='purchases')renderPPurchases();
+  if(name==='settings')loadSettings();
+  updatePurchaseBadge();
+}
+
+function updatePurchaseBadge(){
+  const pending=(D.purchases||[]).filter(p=>!p.redeemed).length;
+  const tabs=document.querySelectorAll('.ptab');
+  const purchTab=tabs[3];
+  if(!purchTab)return;
+  purchTab.innerHTML='Nákupy'+(pending>0?` <span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:100px;background:#FF3B30;color:#fff;font-size:.62rem;font-weight:800;vertical-align:middle;">${pending}</span>`:'');
+}
+
+// ── palette ──
+let selColor=0,selPhoto=null;
+function renderPalette(){
+  document.getElementById('palette').innerHTML=COLORS.map((c,i)=>
+    `<div class="swatch${i===selColor?' on':''}" style="background:${c}" onclick="selColor=${i};renderPalette()"></div>`
+  ).join('');
+}
+document.getElementById('p-cphoto').addEventListener('change',function(){
+  const f=this.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{selPhoto=e.target.result;const p=document.getElementById('p-cphoto-prev');p.src=selPhoto;p.style.display='inline-block';};
+  r.readAsDataURL(f);
+});
+
+// ── children ──
+function addChild(){
+  const name=document.getElementById('p-cname').value.trim();
+  if(!name){toast('Zadej jméno.');return;}
+  D.children.push({id:uid(),name,stars:0,colorIdx:selColor,photo:selPhoto||null,purchases:[]});
+  save();renderPChildren();
+  document.getElementById('p-cname').value='';
+  selPhoto=null;
+  document.getElementById('p-cphoto-prev').style.display='none';
+  document.getElementById('p-cphoto').value='';
+  toast(`${name} přidán/a ✓`);
+}
+function renderPChildren(){
+  const el=document.getElementById('p-children-list');
+  if(!D.children.length){el.innerHTML=`<div class="empty"><div class="empty-msg">Žádné děti</div></div>`;return;}
+  el.innerHTML=D.children.map(c=>`
+    <div class="list-row">
+      <div class="list-ava" style="background:${COLORS[c.colorIdx||0]}">
+        ${c.photo?`<img src="${c.photo}" alt="">`:`${c.name[0]}`}
+      </div>
+      <div style="flex:1"><div class="list-name">${c.name}</div><div class="list-sub">${c.stars} ⭐</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="editStars('${c.id}')">Upravit</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetStars('${c.id}')">Vynulovat</button>
+      <button class="btn btn-ghost btn-sm" onclick="editPhoto('${c.id}')">📷</button>
+      <button class="btn btn-red btn-sm" onclick="removeChild('${c.id}')">✕</button>
+    </div>`).join('');
+}
+function editStars(cid){
+  const c=D.children.find(x=>x.id===cid);if(!c)return;
+  inputModal(`Hvězdičky — ${c.name}`,`Nyní: ${c.stars}`,'number',c.stars,v=>{
+    const n=parseInt(v);if(isNaN(n)||n<0)return;
+    c.stars=n;save();renderPChildren();toast(`${c.name}: ${n} ⭐`);
+  });
+}
+function resetStars(cid){
+  const c=D.children.find(x=>x.id===cid);if(!c)return;
+  confirmModal(`Vynulovat body — ${c.name}?`,`Nastaví hvězdičky na 0. Nevratné.`,ok=>{
+    if(!ok)return;
+    c.stars=0;save();renderPChildren();toast(`${c.name}: body vynulovány.`);
+  });
+}
+function editPhoto(cid){
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=e=>{const c=D.children.find(x=>x.id===cid);if(!c)return;c.photo=e.target.result;save();renderPChildren();toast('Fotka uložena.');};
+    r.readAsDataURL(f);
+  };inp.click();
+}
+function removeChild(cid){
+  confirmModal('Smazat dítě?','Nevratná akce.',ok=>{
+    if(!ok)return;D.children=D.children.filter(c=>c.id!==cid);save();renderPChildren();
+  });
+}
+
+// ── tasks ──
+function addTask(){
+  const name=document.getElementById('p-tname').value.trim();
+  const pts=parseInt(document.getElementById('p-tpts').value);
+  const icon=document.getElementById('p-ticon').value.trim()||'✅';
+  const freq=document.getElementById('p-tfreq').value;
+  if(!name||isNaN(pts)||pts<1){toast('Vyplň název a hvězdičky.');return;}
+  D.tasks.push({id:uid(),icon,name,pts,freq});
+  save();renderPTasks();
+  document.getElementById('p-tname').value='';
+  document.getElementById('p-tpts').value='';
+  document.getElementById('p-ticon').value='';
+}
+function renderPTasks(){
+  const el=document.getElementById('p-tasks-list');
+  if(!D.tasks.length){el.innerHTML=`<div class="empty"><div class="empty-msg">Žádné úkoly</div></div>`;return;}
+  const freqLabel={daily:'Denní',weekly:'Týdenní',occasional:'Nárazový'};
+  el.innerHTML=D.tasks.map(t=>`
+    <div class="list-row" id="pt-${t.id}">
+      <span style="font-size:1.1rem;width:22px;text-align:center">${t.icon}</span>
+      <div style="flex:1" id="pt-info-${t.id}">
+        <div class="list-name">${t.name}</div>
+        <div class="list-sub">${t.pts} ⭐ · ${freqLabel[t.freq]||t.freq}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="pt-edit-${t.id}" onclick="editTask('${t.id}')">Upravit</button>
+      <button class="btn btn-red btn-sm" onclick="removeTask('${t.id}')">✕</button>
+    </div>`).join('');
+}
+function editTask(tid){
+  const t=D.tasks.find(x=>x.id===tid);if(!t)return;
+  const info=document.getElementById('pt-info-'+tid);
+  const editBtn=document.getElementById('pt-edit-'+tid);
+  info.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <input class="inline-inp" id="te-n-${tid}" value="${t.name.replace(/"/g,'&quot;')}" style="flex:2;min-width:100px;">
+      <input class="inline-inp" id="te-p-${tid}" type="number" value="${t.pts}" style="width:52px;text-align:center;">
+    </div>`;
+  editBtn.textContent='Uložit';
+  editBtn.onclick=()=>{
+    const n=document.getElementById('te-n-'+tid)?.value?.trim();
+    const p=parseInt(document.getElementById('te-p-'+tid)?.value);
+    if(n)t.name=n;if(!isNaN(p)&&p>0)t.pts=p;
+    save();renderPTasks();toast('Uloženo.');
+  };
+}
+function removeTask(tid){D.tasks=D.tasks.filter(t=>t.id!==tid);save();renderPTasks();}
+
+// ── rewards ──
+function addReward(){
+  const name=document.getElementById('p-rname').value.trim();
+  const cost=parseInt(document.getElementById('p-rcost').value);
+  const icon=document.getElementById('p-ricon').value.trim()||'🎁';
+  const desc=document.getElementById('p-rdesc').value.trim();
+  if(!name||isNaN(cost)||cost<1){toast('Vyplň název a cenu.');return;}
+  const tier=tierOf(cost);
+  D.rewards.push({id:uid(),icon,name,cost,desc,tier:tier.key});
+  save();renderPRewards();
+  ['p-rname','p-rcost','p-ricon','p-rdesc'].forEach(i=>{document.getElementById(i).value='';});
+}
+function renderPRewards(){
+  const el=document.getElementById('p-rewards-list');
+  if(!D.rewards.length){el.innerHTML=`<div class="empty"><div class="empty-msg">Žádné odměny</div></div>`;return;}
+  el.innerHTML=TIERS.map(tier=>{
+    const rr=D.rewards.filter(r=>r.tier===tier.key);
+    return`<div style="margin-bottom:14px;">
+      <div style="font-size:.67rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:${tier.color};margin-bottom:7px;">${tier.icon} ${tier.label} <span style="color:#C7C7CC;font-weight:600;">(${tier.min}–${tier.max===Infinity?'∞':tier.max} ⭐)</span></div>
+      ${rr.length?rr.map(r=>`
+        <div class="list-row" id="pr-${r.id}">
+          <span style="font-size:1.2rem;width:22px;text-align:center">${r.icon}</span>
+          <div style="flex:1" id="pr-info-${r.id}"><div class="list-name">${r.name}</div><div class="list-sub">${r.cost} ⭐${r.desc?` · ${r.desc}`:''}</div></div>
+          <button class="btn btn-ghost btn-sm" id="pr-edit-${r.id}" onclick="editReward('${r.id}')">Upravit</button>
+          <button class="btn btn-red btn-sm" onclick="removeReward('${r.id}')">✕</button>
+        </div>`).join(''):`<div style="font-size:.78rem;color:#C7C7CC;padding:4px 2px;">Zatím žádná odměna v této úrovni</div>`}
+    </div>`;
+  }).join('');
+}
+function editReward(rid){
+  const r=D.rewards.find(x=>x.id===rid);if(!r)return;
+  const info=document.getElementById('pr-info-'+rid);
+  const editBtn=document.getElementById('pr-edit-'+rid);
+  info.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <input class="inline-inp" id="re-n-${rid}" value="${r.name.replace(/"/g,'&quot;')}" style="flex:2;min-width:90px;">
+      <input class="inline-inp" id="re-c-${rid}" type="number" value="${r.cost}" style="width:56px;text-align:center;" title="Cena">
+    </div>
+    <input class="inline-inp" id="re-d-${rid}" value="${(r.desc||'').replace(/"/g,'&quot;')}" placeholder="Popis" style="width:100%;margin-top:5px;font-size:.78rem;">`;
+  editBtn.textContent='Uložit';
+  editBtn.onclick=()=>{
+    const n=document.getElementById('re-n-'+rid)?.value?.trim();
+    const c=parseInt(document.getElementById('re-c-'+rid)?.value);
+    const d=document.getElementById('re-d-'+rid)?.value?.trim();
+    if(n)r.name=n;
+    if(!isNaN(c)&&c>0){r.cost=c;r.tier=tierOf(c).key;} // re-assign tier if cost changed
+    r.desc=d||'';
+    save();renderPRewards();toast('Odměna uložena.');
+  };
+}
+function removeReward(rid){D.rewards=D.rewards.filter(r=>r.id!==rid);save();renderPRewards();}
+
+// ── purchases ──
+function renderPPurchases(){
+  const el=document.getElementById('p-purchases-list');
+  if(!D.purchases.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">Žádné nákupy odměn</div></div>`;return;}
+  const pending=D.purchases.filter(p=>!p.redeemed).length;
+  const banner=pending>0
+    ?`<div style="background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:13px;padding:12px 14px;margin-bottom:12px;font-size:.85rem;color:#9A3412;font-weight:600;">🔔 ${pending} ${pending===1?'nová odměna čeká':pending<5?'nové odměny čekají':'nových odměn čeká'} na uplatnění</div>`
+    :'';
+  el.innerHTML=banner+D.purchases.map(p=>`
+    <div class="purchase-pill${p.redeemed?' redeemed':''}" id="pp-${p.id}">
+      <div class="p-icon">${p.icon}</div>
+      <div class="p-info">
+        <div class="p-name">${p.name} — <b>${p.childName}</b></div>
+        <div class="p-meta">${p.cost} ⭐ · ${p.when}</div>
+      </div>
+      ${!p.redeemed
+        ?`<button class="btn btn-green btn-sm" onclick="redeemPurchase('${p.id}')">✓ Uplatnit</button>`
+        :`<div class="p-badge used">✓ Uplatněno</div>`}
+    </div>`).join('');
+}
+function redeemPurchase(pid){
+  // mark in global list
+  const gp=D.purchases.find(x=>x.id===pid);
+  if(!gp)return;
+  gp.redeemed=true;
+  // mark in child's list too
+  D.children.forEach(c=>{
+    if(!c.purchases)return;
+    const cp=c.purchases.find(x=>x.id===pid);
+    if(cp)cp.redeemed=true;
+  });
+  save();renderPPurchases();updatePurchaseBadge();toast('Odměna označena jako uplatněná ✓');
+}
+
+// ── settings ──
+function loadSettings(){
+  document.getElementById('s-api').value=D.apiKey||'';
+  document.getElementById('s-email').value=D.contact.email||'';
+  document.getElementById('s-phone').value=D.contact.phone||'';
+}
+function saveField(key,inputId){D[key]=document.getElementById(inputId).value.trim();save();toast('Uloženo.');}
+function saveContact(){
+  D.contact.email=document.getElementById('s-email').value.trim();
+  D.contact.phone=document.getElementById('s-phone').value.trim();
+  save();toast('Kontakt uložen.');
+}
+function savePin(){
+  const p=document.getElementById('s-pin').value.trim();
+  if(p.length<3){toast('PIN je příliš krátký.');return;}
+  D.pin=p;save();toast('PIN uložen.');document.getElementById('s-pin').value='';
+}
+function loadDefaults(){
+  confirmModal('Načíst výchozí obsah?','Doplní připravené úkoly a odměny. Děti a body zůstanou.',ok=>{
+    if(!ok)return;
+    D.tasks=seedTasks();
+    D.rewards=seedRewards();
+    save();
+    toast('Výchozí úkoly a odměny načteny ✓');
+    ptab('tasks');
+  });
+}
+
+function resetAll(){
+  confirmModal('Vymazat všechna data?','Tato akce je nevratná.',ok=>{
+    if(!ok)return;localStorage.removeItem(SKEY);location.reload();
+  });
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+load();
+renderPalette();
+</script>
+</body>
+</html>
