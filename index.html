@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lumio</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -949,7 +949,7 @@ function load(){
   }
   if(!Array.isArray(D.missionHistory)) D.missionHistory=[];
   if(!Array.isArray(D.purchases)) D.purchases=[];
-  if(!D.contact) D.contact={email:'nesvadbova.andrea@seznam.cz',phone:'720159234'};
+  if(!D.contact) D.contact={email:'',phone:''};
   if(!D.apiKey)  D.apiKey='';
   if(!D.pin)     D.pin='1234';
   if(!D.checked) D.checked={};
@@ -967,10 +967,32 @@ function load(){
     if(!c.av||!c.av.shirt) c.av={shirt:'#9CA3AF', pants:'#6B7280', skin:AV_SKIN[1], bottom:'pants', hair:null, hairColor:AV_HAIRC[0], face:'happy', bg:AV_BG[(c.colorIdx||0)%AV_BG.length], skins:[], custom:false};
     if(!Array.isArray(c.ownedSkins)) c.ownedSkins=[];
   });
+  // Jednorázové vyčištění už uložených textů od znaků < > " (ochrana proti
+  // rozbití HTML/atributů u dat uložených před touto opravou).
+  if(!D.sanitized){
+    D.children.forEach(c=>{ c.name=sanitizeText(c.name)||c.name; });
+    D.tasks.forEach(t=>{ t.name=sanitizeText(t.name); t.icon=sanitizeText(t.icon)||t.icon; });
+    D.rewards.forEach(r=>{ r.name=sanitizeText(r.name); r.icon=sanitizeText(r.icon)||r.icon; r.desc=sanitizeText(r.desc); });
+    (D.sharedRewards||[]).forEach(r=>{ r.name=sanitizeText(r.name); r.icon=sanitizeText(r.icon)||r.icon; r.desc=sanitizeText(r.desc); });
+    (D.penalties||[]).forEach(p=>{ p.name=sanitizeText(p.name); p.icon=sanitizeText(p.icon)||p.icon; });
+    (D.missions||[]).forEach(m=>{ if(m.customName)m.customName=sanitizeText(m.customName); if(m.customIcon)m.customIcon=sanitizeText(m.customIcon); });
+    D.sanitized=true;
+  }
   save();
 }
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// Ochrana proti rozbití HTML/atributů: odstraní znaky, kterými by šlo
+// uniknout z innerHTML textu nebo z onclick="...('...')" atributu.
+// Volá se na všech textech, které zadává rodič (jméno, název, popis, ikona).
+function sanitizeText(s){
+  return String(s==null?'':s).replace(/[<>"]/g,'').trim();
+}
+// HTML-escape pro jistotu i při vykreslování (obrana do hloubky).
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 function seedChildren(){return[
   {id:uid(),name:'Amélka',stars:0,colorIdx:1,photo:null,avatar:null,purchases:[],totalEarned:0,streak:0,bestStreak:0,lastActiveDay:null,badges:[],weekStars:[],av:null,ownedSkins:[]},
@@ -1134,15 +1156,42 @@ function sfxOk(){
 }
 
 // ── SPEECH (Web Speech API, Czech) ──
+// Hlasy se v prohlížeči (hlavně Chrome) načítají asynchronně — hned po startu
+// stránky umí getVoices() vrátit prázdné pole, takže se český hlas nenajde
+// a použije se výchozí (často anglický), i když lang zůstane 'cs-CZ'.
+// Proto hlasy cachujeme a doplňujeme přes 'voiceschanged'.
+let _voices=[];
+function _refreshVoices(){
+  const v=window.speechSynthesis.getVoices();
+  if(v&&v.length) _voices=v;
+}
+if('speechSynthesis'in window){
+  _refreshVoices();
+  window.speechSynthesis.onvoiceschanged=_refreshVoices;
+}
+function _findCzVoice(){
+  return _voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith('cs'));
+}
 function speak(text){
   if(!('speechSynthesis'in window))return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
   u.lang='cs-CZ';u.rate=0.95;u.pitch=1.05;
-  const voices=window.speechSynthesis.getVoices();
-  const cz=voices.find(v=>v.lang&&v.lang.startsWith('cs'));
-  if(cz)u.voice=cz;
-  window.speechSynthesis.speak(u);
+  _refreshVoices();
+  let cz=_findCzVoice();
+  if(cz){
+    u.voice=cz;
+    window.speechSynthesis.speak(u);
+  } else {
+    // hlasy ještě nejsou načtené — krátce počkej a zkus to znovu,
+    // ať se nemluví rovnou špatným (výchozím) hlasem
+    setTimeout(()=>{
+      _refreshVoices();
+      cz=_findCzVoice();
+      if(cz)u.voice=cz;
+      window.speechSynthesis.speak(u);
+    },250);
+  }
 }
 
 // ════════════════════════════════════════════
@@ -1755,6 +1804,26 @@ function bossHit(cid, task){
   defeated.forEach((m,i)=> setTimeout(()=>showBossVictory(m.id), 700+i*300));
 }
 
+// ── VRÁCENÍ ZÁSAHU: volá se při odškrtnutí úkolu, aby zaškrtnutí+odškrtnutí
+// dokola nešlo zneužít k nekonečnému poškozování bosse zadarmo. ──
+function bossUnhit(cid, task){
+  const missions=activeMissions();
+  if(!missions.length)return;
+  let changed=false;
+  missions.forEach(m=>{
+    const dmg=bossDamageForMission(m, task);
+    if(dmg<=0)return;
+    m.hp=Math.min(m.maxHp, m.hp+dmg);
+    m.hits[cid]=Math.max(0,(m.hits[cid]||0)-1);
+    m.dmg[cid]=Math.max(0,(m.dmg[cid]||0)-dmg);
+    changed=true;
+  });
+  if(!changed)return;
+  save();
+  renderMissionBanner();
+  requestAnimationFrame(renderBossHud);
+}
+
 // je prvek vidět na obrazovce?
 function isInViewport(el){
   if(!el)return false;
@@ -2039,11 +2108,14 @@ function finishMission(mid){
     : (D.sharedRewards.find(r=>r.id===m.rewardId)||{name:'Odměna'}).name;
   const icon = m.rewardType==='custom' ? (m.customIcon||'🎁')
     : (D.sharedRewards.find(r=>r.id===m.rewardId)||{icon:'🎁'}).icon;
-  D.sharedPurchases.push({id:uid(), name, icon, cost:0, when:Date.now(), fromMission:true});
+  D.sharedPurchases.unshift({id:uid(), name, icon, cost:0, when:new Date().toLocaleString('cs-CZ'), redeemed:false, fromMission:true});
+  if(!D.notifications)D.notifications=[];
+  D.notifications.unshift({id:uid(),text:`Mise odemkla odměnu: ${icon} ${name}`,when:new Date().toLocaleString('cs-CZ'),seen:false});
   removeMission(m.id);
   save();
   renderKids();
   renderPMission();
+  updatePurchaseBadge();
   toast(`🎉 Odemčeno: ${name}`);
 }
 
@@ -2280,8 +2352,8 @@ function nmNewTask(){
 }
 
 function nmSaveNewTask(cat){
-  const icon=(document.getElementById('nt-icon').value.trim())||'✅';
-  const name=(document.getElementById('nt-name').value.trim());
+  const icon=sanitizeText(document.getElementById('nt-icon').value.trim())||'✅';
+  const name=sanitizeText(document.getElementById('nt-name').value.trim());
   const pts=parseInt(document.getElementById('nt-pts').value);
   const freq=document.getElementById('nt-freq').value;
   if(!name||isNaN(pts)||pts<1){ toast('Vyplň název a hvězdičky.'); return; }
@@ -2313,8 +2385,8 @@ function nmSuggestHp(){ nmHp=suggestHp(nmDays); renderPMission(); }
 function nmSetRewardType(t){
   // ulož rozepsanou vlastní odměnu
   const ic=document.getElementById('nm-icon'), nn=document.getElementById('nm-name');
-  if(ic) _nmIcon=ic.value||'🎁';
-  if(nn) _nmName=nn.value||'';
+  if(ic) _nmIcon=sanitizeText(ic.value)||'🎁';
+  if(nn) _nmName=sanitizeText(nn.value);
   nmRewardType=t; renderPMission();
 }
 function nmSetReward(id){ nmRewardId=id; renderPMission(); }
@@ -2327,8 +2399,8 @@ function startMission(){
     rewardId=nmRewardId;
   } else {
     const ic=document.getElementById('nm-icon'), nn=document.getElementById('nm-name');
-    customIcon=(ic&&ic.value.trim())||'🎁';
-    customName=(nn&&nn.value.trim())||'';
+    customIcon=sanitizeText(ic&&ic.value.trim())||'🎁';
+    customName=sanitizeText(nn&&nn.value.trim());
     if(!customName){ toast('Napiš, co mise odemyká.'); return; }
     _nmIcon=customIcon; _nmName=customName;
   }
@@ -3092,6 +3164,7 @@ function toggleTask(cid,tid){
     subWeekStars(c,t.pts);
     if(c.taskCounter>0) c.taskCounter--;
     save(); renderKids(); sfxDown();
+    bossUnhit(cid, t);   // vrať i poškození bosse, jinak by šlo zaškrtávat/odškrtávat pro zadarmo poškození
     toast(`${c.name}: úkol „${t.name}" odškrtnut (−${t.pts} ⭐)`);
     return;
   }
@@ -3137,7 +3210,12 @@ function toggleTask(cid,tid){
 }
 
 // ── STREAK ──
-function dayNum(){ return Math.floor(Date.now()/86400000); } // dní od epochy
+// dní od epochy podle MÍSTNÍHO data (ne UTC) — musí se shodovat s todayStr()/weekNum(),
+// jinak se hranice dne pro sérii/mise posouvala o 1-2h oproti resetu úkolů.
+function dayNum(){
+  const d=new Date();
+  return Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()/86400000);
+}
 function updateStreak(c){
   const today=dayNum();
   if(c.lastActiveDay===today) return ''; // už dnes aktivní, streak se nemění
@@ -3461,7 +3539,7 @@ function ptab(name){
 }
 
 function updatePurchaseBadge(){
-  const pending=(D.purchases||[]).filter(p=>!p.redeemed).length;
+  const pending=(D.purchases||[]).filter(p=>!p.redeemed).length + (D.sharedPurchases||[]).filter(p=>!p.redeemed).length;
   const purchTab=document.getElementById('ptab-btn-purchases');
   if(!purchTab)return;
   purchTab.innerHTML='Nákupy'+(pending>0?` <span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:100px;background:#FF3B30;color:#fff;font-size:.62rem;font-weight:800;vertical-align:middle;">${pending}</span>`:'');
@@ -3497,7 +3575,7 @@ document.getElementById('p-cphoto').addEventListener('change',function(){
 
 // ── children ──
 function addChild(){
-  const name=document.getElementById('p-cname').value.trim();
+  const name=sanitizeText(document.getElementById('p-cname').value.trim());
   if(!name){toast('Zadej jméno.');return;}
   D.children.push({id:uid(),name,stars:0,colorIdx:selColor,photo:selPhoto||null,avatar:selAvatar||null,purchases:[],totalEarned:0,streak:0,bestStreak:0,lastActiveDay:null,badges:[],weekStars:[],av:{shirt:AV_SHIRT[selColor%AV_SHIRT.length],pants:AV_PANTS[0],skin:AV_SKIN[1],bottom:'pants',hair:'short',hairColor:AV_HAIRC[0],face:'happy',bg:AV_BG[selColor%AV_BG.length],skins:[]},ownedSkins:[]});
   save();renderPChildren();
@@ -3658,7 +3736,7 @@ function editChild(cid){
   window._ecColor=i=>{pickedColor=i;render();};
   window._ecClose=()=>bg.remove();
   window._ecSave=()=>{
-    const nm=document.getElementById('ec-name').value.trim();
+    const nm=sanitizeText(document.getElementById('ec-name').value.trim());
     if(nm)c.name=nm;
     c.colorIdx=pickedColor;
     c.avatar=pickedAva;
@@ -3842,8 +3920,8 @@ function managePenalties(){
   window._penModal=bg;
 }
 function addPenalty(){
-  const ic=document.getElementById('np-icon').value.trim()||'⚠️';
-  const nm=document.getElementById('np-name').value.trim();
+  const ic=sanitizeText(document.getElementById('np-icon').value.trim())||'⚠️';
+  const nm=sanitizeText(document.getElementById('np-name').value.trim());
   const co=parseInt(document.getElementById('np-cost').value);
   if(!nm||isNaN(co)||co<1){ toast('Vyplň popis a počet hvězdiček.'); return; }
   if(!Array.isArray(D.penalties)) D.penalties=[];
@@ -3891,46 +3969,6 @@ function sfxStarDrop(){
   }catch(e){}
 }
 
-function editAvatar(cid){
-  const c=D.children.find(x=>x.id===cid);if(!c)return;
-  let gender='boy',picked=c.avatar||null;
-  const bg=document.createElement('div');bg.className='modal-bg';
-  function grid(){
-    const list=gender==='boy'?AVATARS_BOY:AVATARS_GIRL;
-    return list.map(a=>`<button type="button" onclick="window._pickAva('${a}')" style="width:42px;height:42px;border-radius:11px;border:2px solid ${a===picked?'#111':'#E5E5EA'};background:${a===picked?'#F5F5F7':'#fff'};font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">${a}</button>`).join('');
-  }
-  function render(){
-    bg.innerHTML=`<div class="modal" style="max-width:340px;">
-      <div class="modal-title">Postavička — ${c.name}</div>
-      <div style="display:flex;gap:6px;justify-content:center;margin:12px 0;">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="window._avaGender('boy')" style="${gender==='boy'?'background:#111;color:#fff;':''}">👦 Kluk</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="window._avaGender('girl')" style="${gender==='girl'?'background:#111;color:#fff;':''}">👧 Holka</button>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">${grid()}</div>
-      <div class="modal-btns">
-        <button class="btn btn-ghost btn-sm" onclick="window._avaClose()">Zrušit</button>
-        <button class="btn btn-ghost btn-sm" onclick="window._pickAva(null)">Bez postavičky</button>
-        <button class="btn btn-primary btn-sm" onclick="window._avaSave()">Uložit</button>
-      </div>
-    </div>`;
-  }
-  window._avaGender=g=>{gender=g;render();};
-  window._pickAva=a=>{picked=a==='null'?null:a;render();};
-  window._avaClose=()=>bg.remove();
-  window._avaSave=()=>{c.avatar=picked;if(picked)c.photo=null;save();renderPChildren();bg.remove();toast('Postavička uložena.');};
-  document.body.appendChild(bg);
-  bg.addEventListener('click',e=>{if(e.target===bg)bg.remove();});
-  render();
-}
-function editPhoto(cid){
-  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-  inp.onchange=()=>{
-    const f=inp.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=e=>{const c=D.children.find(x=>x.id===cid);if(!c)return;c.photo=e.target.result;save();renderPChildren();toast('Fotka uložena.');};
-    r.readAsDataURL(f);
-  };inp.click();
-}
 function deleteChildProfile(cid){
   const c=D.children.find(x=>x.id===cid);
   if(!c)return;
@@ -3958,9 +3996,9 @@ function deleteChildProfile(cid){
 
 // ── tasks ──
 function addTask(){
-  const name=document.getElementById('p-tname').value.trim();
+  const name=sanitizeText(document.getElementById('p-tname').value.trim());
   const pts=parseInt(document.getElementById('p-tpts').value);
-  const icon=document.getElementById('p-ticon').value.trim()||'✅';
+  const icon=sanitizeText(document.getElementById('p-ticon').value.trim())||'✅';
   const freq=document.getElementById('p-tfreq').value;
   if(!name||isNaN(pts)||pts<1){toast('Vyplň název a hvězdičky.');return;}
   D.tasks.push({id:uid(),icon,name,pts,freq,cat:guessCat(name)});
@@ -4000,7 +4038,7 @@ function editTask(tid){
     </select>`;
   editBtn.textContent='Uložit';
   editBtn.onclick=()=>{
-    const n=document.getElementById('te-n-'+tid)?.value?.trim();
+    const n=sanitizeText(document.getElementById('te-n-'+tid)?.value?.trim());
     const p=parseInt(document.getElementById('te-p-'+tid)?.value);
     const c=document.getElementById('te-c-'+tid)?.value;
     if(n)t.name=n;if(!isNaN(p)&&p>0)t.pts=p;
@@ -4012,10 +4050,10 @@ function removeTask(tid){D.tasks=D.tasks.filter(t=>t.id!==tid);save();renderPTas
 
 // ── rewards ──
 function addReward(){
-  const name=document.getElementById('p-rname').value.trim();
+  const name=sanitizeText(document.getElementById('p-rname').value.trim());
   const cost=parseInt(document.getElementById('p-rcost').value);
-  const icon=document.getElementById('p-ricon').value.trim()||'🎁';
-  const desc=document.getElementById('p-rdesc').value.trim();
+  const icon=sanitizeText(document.getElementById('p-ricon').value.trim())||'🎁';
+  const desc=sanitizeText(document.getElementById('p-rdesc').value.trim());
   if(!name||isNaN(cost)||cost<1){toast('Vyplň název a cenu.');return;}
   const tier=tierOf(cost);
   D.rewards.push({id:uid(),icon,name,cost,desc,tier:tier.key});
@@ -4054,10 +4092,10 @@ function renderPSharedRewards(){
     </div>`).join('');
 }
 function addSharedReward(){
-  const name=document.getElementById('p-srname').value.trim();
+  const name=sanitizeText(document.getElementById('p-srname').value.trim());
   const cost=parseInt(document.getElementById('p-srcost').value);
-  const icon=document.getElementById('p-sricon').value.trim()||'🎁';
-  const desc=document.getElementById('p-srdesc').value.trim();
+  const icon=sanitizeText(document.getElementById('p-sricon').value.trim())||'🎁';
+  const desc=sanitizeText(document.getElementById('p-srdesc').value.trim());
   if(!name||isNaN(cost)||cost<1){toast('Vyplň název a cenu.');return;}
   D.sharedRewards.push({id:uid(),icon,name,cost,desc});
   save();renderPSharedRewards();
@@ -4076,9 +4114,9 @@ function editSharedReward(rid){
     <input class="inline-inp" id="sre-d-${rid}" value="${(r.desc||'').replace(/"/g,'&quot;')}" placeholder="Popis" style="width:100%;margin-top:5px;font-size:.78rem;">`;
   editBtn.textContent='Uložit';
   editBtn.onclick=()=>{
-    const n=document.getElementById('sre-n-'+rid)?.value?.trim();
+    const n=sanitizeText(document.getElementById('sre-n-'+rid)?.value?.trim());
     const c=parseInt(document.getElementById('sre-c-'+rid)?.value);
-    const d=document.getElementById('sre-d-'+rid)?.value?.trim();
+    const d=sanitizeText(document.getElementById('sre-d-'+rid)?.value?.trim());
     if(n)r.name=n;
     if(!isNaN(c)&&c>0)r.cost=c;
     r.desc=d||'';
@@ -4098,9 +4136,9 @@ function editReward(rid){
     <input class="inline-inp" id="re-d-${rid}" value="${(r.desc||'').replace(/"/g,'&quot;')}" placeholder="Popis" style="width:100%;margin-top:5px;font-size:.78rem;">`;
   editBtn.textContent='Uložit';
   editBtn.onclick=()=>{
-    const n=document.getElementById('re-n-'+rid)?.value?.trim();
+    const n=sanitizeText(document.getElementById('re-n-'+rid)?.value?.trim());
     const c=parseInt(document.getElementById('re-c-'+rid)?.value);
-    const d=document.getElementById('re-d-'+rid)?.value?.trim();
+    const d=sanitizeText(document.getElementById('re-d-'+rid)?.value?.trim());
     if(n)r.name=n;
     if(!isNaN(c)&&c>0){r.cost=c;r.tier=tierOf(c).key;} // re-assign tier if cost changed
     r.desc=d||'';
@@ -4112,22 +4150,44 @@ function removeReward(rid){D.rewards=D.rewards.filter(r=>r.id!==rid);save();rend
 // ── purchases ──
 function renderPPurchases(){
   const el=document.getElementById('p-purchases-list');
-  if(!D.purchases.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">Žádné nákupy odměn</div></div>`;return;}
-  const pending=D.purchases.filter(p=>!p.redeemed).length;
+  const individual=D.purchases||[];
+  const shared=D.sharedPurchases||[];
+  if(!individual.length && !shared.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">Žádné nákupy odměn</div></div>`;return;}
+  const pending=individual.filter(p=>!p.redeemed).length + shared.filter(p=>!p.redeemed).length;
   const banner=pending>0
     ?`<div style="background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:13px;padding:12px 14px;margin-bottom:12px;font-size:.85rem;color:#9A3412;font-weight:600;">🔔 ${pending} ${pending===1?'nová odměna čeká':pending<5?'nové odměny čekají':'nových odměn čeká'} na uplatnění</div>`
     :'';
-  el.innerHTML=banner+D.purchases.map(p=>`
-    <div class="purchase-pill${p.redeemed?' redeemed':''}" id="pp-${p.id}">
-      <div class="p-icon">${p.icon}</div>
-      <div class="p-info">
-        <div class="p-name">${p.name} — <b>${p.childName}</b></div>
-        <div class="p-meta">${p.cost} ⭐ · ${p.when}</div>
-      </div>
-      ${!p.redeemed
-        ?`<button class="btn btn-green btn-sm" onclick="redeemPurchase('${p.id}')">✓ Uplatnit</button>`
-        :`<div class="p-badge used">✓ Uplatněno</div>`}
-    </div>`).join('');
+  let html=banner;
+  if(shared.length){
+    html+=`<div style="font-size:.67rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#4F46E5;margin-bottom:7px;">👨‍👩‍👧‍👦 Rodinné a misové odměny</div>`;
+    html+=shared.map(p=>`
+      <div class="purchase-pill${p.redeemed?' redeemed':''}" id="pps-${p.id}">
+        <div class="p-icon">${esc(p.icon)}</div>
+        <div class="p-info">
+          <div class="p-name">${esc(p.name)}${p.fromMission?' <span style="color:#4F46E5;font-weight:600;">(mise)</span>':''}</div>
+          <div class="p-meta">${p.cost} ⭐ · ${esc(p.when)}</div>
+        </div>
+        ${!p.redeemed
+          ?`<button class="btn btn-green btn-sm" onclick="redeemSharedPurchase('${p.id}')">✓ Uplatnit</button>`
+          :`<div class="p-badge used">✓ Uplatněno</div>`}
+      </div>`).join('');
+    html+=`<div style="height:10px;"></div>`;
+  }
+  if(individual.length){
+    if(shared.length) html+=`<div style="font-size:.67rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#999;margin-bottom:7px;">Nákupy dětí</div>`;
+    html+=individual.map(p=>`
+      <div class="purchase-pill${p.redeemed?' redeemed':''}" id="pp-${p.id}">
+        <div class="p-icon">${esc(p.icon)}</div>
+        <div class="p-info">
+          <div class="p-name">${esc(p.name)} — <b>${esc(p.childName)}</b></div>
+          <div class="p-meta">${p.cost} ⭐ · ${esc(p.when)}</div>
+        </div>
+        ${!p.redeemed
+          ?`<button class="btn btn-green btn-sm" onclick="redeemPurchase('${p.id}')">✓ Uplatnit</button>`
+          :`<div class="p-badge used">✓ Uplatněno</div>`}
+      </div>`).join('');
+  }
+  el.innerHTML=html;
 }
 function redeemPurchase(pid){
   // mark in global list
@@ -4140,6 +4200,12 @@ function redeemPurchase(pid){
     const cp=c.purchases.find(x=>x.id===pid);
     if(cp)cp.redeemed=true;
   });
+  save();renderPPurchases();updatePurchaseBadge();toast('Odměna označena jako uplatněná ✓');
+}
+function redeemSharedPurchase(pid){
+  const gp=(D.sharedPurchases||[]).find(x=>x.id===pid);
+  if(!gp)return;
+  gp.redeemed=true;
   save();renderPPurchases();updatePurchaseBadge();toast('Odměna označena jako uplatněná ✓');
 }
 
