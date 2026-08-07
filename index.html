@@ -557,6 +557,7 @@ body{
     <button class="ptab" onclick="ptab('rewards')">Odměny</button>
     <button class="ptab" onclick="ptab('mission')">Mise</button>
     <button class="ptab" id="ptab-btn-purchases" onclick="ptab('purchases')">Nákupy</button>
+    <button class="ptab" onclick="ptab('activity')">Aktivita</button>
     <button class="ptab" onclick="ptab('settings')">Nastavení</button>
   </div>
   <div class="parent-body">
@@ -603,6 +604,10 @@ body{
             <option value="occasional">Nárazový</option>
           </select>
         </div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:.82rem;color:#666;margin-top:6px;cursor:pointer;">
+          <input type="checkbox" id="p-trepeat" checked style="width:16px;height:16px;">
+          Opakovatelný — jde splnit i vícekrát za den
+        </label>
         <button class="btn btn-primary" onclick="addTask()" style="margin-top:4px;">Přidat úkol</button>
       </div>
       <div id="p-tasks-list"></div>
@@ -646,6 +651,9 @@ body{
     </div>
     <div class="ptab-panel" id="ptab-purchases">
       <div id="p-purchases-list"></div>
+    </div>
+    <div class="ptab-panel" id="ptab-activity">
+      <div id="p-activity-list"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -695,6 +703,7 @@ body{
           <button class="btn btn-ghost btn-sm" onclick="clearAllOf('avatar')" style="justify-content:flex-start;">🎨 Resetovat postavičky</button>
           <button class="btn btn-ghost btn-sm" onclick="clearAllOf('chest')" style="justify-content:flex-start;">🎁 Vymazat truhly a poukázky</button>
           <button class="btn btn-ghost btn-sm" onclick="clearAllOf('checked')" style="justify-content:flex-start;">✅ Odškrtnout všechny úkoly</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearAllOf('activity')" style="justify-content:flex-start;">📜 Vymazat log aktivity</button>
           <button class="btn btn-sm" onclick="clearAllOf('all')" style="justify-content:flex-start;border:1.5px solid #FDE68A;color:#B45309;background:#FFFBEB;font-weight:800;">🔄 Vynulovat úplně vše (kromě úkolů a odměn)</button>
         </div>
       </div>
@@ -924,6 +933,39 @@ function load(){
   if(D.penalties.some(p=>/Zlobil jsem|Neuklidil jsem|se ségrou'|Neposlouchal jsem/.test(p.name))){
     D.penalties=seedPenalties();
   }
+  // Sjednocení duplicitních úkolů na prach/stůl (jen přejmenování, ať se to nezdvojuje)
+  if(!D.m_dustRename){
+    const dup=D.tasks.find(t=>t.name==='Utřít stůl a poličky');
+    if(dup) dup.name='Utřít stůl';
+    D.m_dustRename=true;
+  }
+  // V praxi jde skoro každý úkol udělat i vícekrát za den — opakovatelnost teď platí
+  // pro všechny úkoly, kde ji rodič sám nevypnul (jen jednou, ať to jde i vypnout natrvalo).
+  if(!D.m_repeatableAll2026){
+    D.tasks.forEach(t=>{ if(t.repeatable===undefined) t.repeatable=true; });
+    D.m_repeatableAll2026=true;
+  }
+  // Nový úkol "Pomoc mámě" — přidán jen jednou, ať ho jde i smazat natrvalo
+  if(!D.m_addPomocMame){
+    if(!D.tasks.some(t=>t.name==='Pomoc mámě')) D.tasks.push({id:uid(),icon:'🤝',name:'Pomoc mámě',pts:2,freq:'daily',cat:'other',repeatable:true});
+    D.m_addPomocMame=true;
+  }
+  // Nová odměna "Extra 10 min mazlení s mámou" — přidána jen jednou
+  if(!D.m_addMazleniReward){
+    if(!D.rewards.some(r=>r.name==='Extra 10 min mazlení s mámou')) D.rewards.push({id:uid(),icon:'🤗',name:'Extra 10 min mazlení s mámou',cost:6,desc:'Deset minut jen pro vás dva',tier:'bronze'});
+    D.m_addMazleniReward=true;
+  }
+  // Snížení hvězdiček u výchozích úkolů (byly moc velkorysé — šlo nasbírat 50+ hvězdiček za den).
+  // Sníží jen úkoly, které rodič ještě neupravil (pts pořád odpovídá starému výchozímu nastavení).
+  if(!D.m_taskPtsRebalance2026){
+    const OLD_PTS={'Ustlat postel':2,'Vyčistit zuby ráno i večer':2,'Dát prádlo do koše':2,'Připravit věci do školy/školky':3,'Uklidit hračky':3,'Prostřít stůl':2,'Vysypat koš v koupelně':2,'Vysypat koš v kuchyni':2,'Uklidit koupelnu po sobě':2,'Zamést nebo vysát':5,'Pomoci s nádobím':6,'Zalít květiny':3,'Pomoci s nákupem':5,'Utřít prach':4,'Utřít stůl':3,'Odnést tříděný odpad':4,'Hrát si spolu':5,'Hrát si 30 minut':3,'Pomoci na zahradě':5,'Uklidit pokoj do velké čistoty':8,'Pomoct uvařit nebo upéct':7,'Chovat se k sobě hezky/pomoci si':5};
+    D.tasks.forEach(t=>{
+      if(OLD_PTS[t.name]!==undefined && t.pts===OLD_PTS[t.name]){
+        t.pts=Math.max(1,Math.round(OLD_PTS[t.name]/2));
+      }
+    });
+    D.m_taskPtsRebalance2026=true;
+  }
   if(!Array.isArray(D.sharedPurchases)) D.sharedPurchases=[];
   // Více misí najednou: přechod z jedné mise (D.mission) na pole (D.missions)
   if(!Array.isArray(D.missions)) D.missions=[];
@@ -949,6 +991,7 @@ function load(){
   }
   if(!Array.isArray(D.missionHistory)) D.missionHistory=[];
   if(!Array.isArray(D.purchases)) D.purchases=[];
+  if(!Array.isArray(D.activityLog)) D.activityLog=[];
   if(!D.contact) D.contact={email:'',phone:''};
   if(!D.apiKey)  D.apiKey='';
   if(!D.pin)     D.pin='1234';
@@ -1018,33 +1061,34 @@ function seedSharedRewards(){return[
 ];}
 
 function seedTasks(){return[
-  {id:uid(),icon:'🛌',name:'Ustlat postel',pts:2,freq:'daily',cat:'room'},
-  {id:uid(),icon:'🚿',name:'Vana bez připomínání',pts:1,freq:'daily',cat:'self'},
-  {id:uid(),icon:'🦷',name:'Vyčistit zuby ráno i večer',pts:2,freq:'daily',cat:'self'},
-  {id:uid(),icon:'👕',name:'Obléct se sám/sama',pts:1,freq:'daily',cat:'laundry'},
-  {id:uid(),icon:'🌙',name:'Jít spát včas',pts:1,freq:'daily',cat:'self'},
-  {id:uid(),icon:'🧺',name:'Dát prádlo do koše',pts:2,freq:'daily',cat:'laundry'},
-  {id:uid(),icon:'👟',name:'Uklidit boty na místo',pts:1,freq:'daily',cat:'room'},
-  {id:uid(),icon:'🎒',name:'Připravit věci do školy/školky',pts:3,freq:'daily',cat:'room'},
-  {id:uid(),icon:'🧸',name:'Uklidit hračky',pts:3,freq:'daily',cat:'room'},
-  {id:uid(),icon:'🥄',name:'Odnést talíř po jídle',pts:1,freq:'daily',cat:'dishes'},
-  {id:uid(),icon:'🍽',name:'Prostřít stůl',pts:2,freq:'occasional',cat:'dishes'},
-  {id:uid(),icon:'🗑',name:'Vysypat koš v koupelně',pts:2,freq:'occasional',cat:'trash'},
-  {id:uid(),icon:'♻️',name:'Vysypat koš v kuchyni',pts:2,freq:'daily',cat:'trash'},
-  {id:uid(),icon:'🧴',name:'Uklidit koupelnu po sobě',pts:2,freq:'daily',cat:'floor'},
-  {id:uid(),icon:'🧹',name:'Zamést nebo vysát',pts:5,freq:'weekly',cat:'floor'},
-  {id:uid(),icon:'🫧',name:'Pomoci s nádobím',pts:6,freq:'weekly',cat:'dishes'},
-  {id:uid(),icon:'🌿',name:'Zalít květiny',pts:3,freq:'weekly',cat:'dust'},
-  {id:uid(),icon:'🛒',name:'Pomoci s nákupem',pts:5,freq:'weekly',cat:'other'},
-  {id:uid(),icon:'🪟',name:'Utřít prach',pts:4,freq:'weekly',cat:'dust'},
-  {id:uid(),icon:'🧽',name:'Utřít stůl a poličky',pts:3,freq:'weekly',cat:'dust'},
-  {id:uid(),icon:'♻️',name:'Odnést tříděný odpad',pts:4,freq:'weekly',cat:'trash'},
-  {id:uid(),icon:'👶',name:'Hrát si spolu',pts:5,freq:'weekly',cat:'other'},
-  {id:uid(),icon:'📚',name:'Hrát si 30 minut',pts:3,freq:'occasional',cat:'other'},
-  {id:uid(),icon:'🌱',name:'Pomoci na zahradě',pts:5,freq:'occasional',cat:'other'},
-  {id:uid(),icon:'🎁',name:'Uklidit pokoj do velké čistoty',pts:8,freq:'occasional',cat:'room'},
-  {id:uid(),icon:'🍳',name:'Pomoct uvařit nebo upéct',pts:7,freq:'occasional',cat:'dishes'},
-  {id:uid(),icon:'✅',name:'Chovat se k sobě hezky/pomoci si',pts:5,freq:'occasional',cat:'other'}
+  {id:uid(),icon:'🛌',name:'Ustlat postel',pts:2,freq:'daily',cat:'room',repeatable:true},
+  {id:uid(),icon:'🚿',name:'Vana bez připomínání',pts:1,freq:'daily',cat:'self',repeatable:true},
+  {id:uid(),icon:'🦷',name:'Vyčistit zuby ráno i večer',pts:2,freq:'daily',cat:'self',repeatable:true},
+  {id:uid(),icon:'👕',name:'Obléct se sám/sama',pts:1,freq:'daily',cat:'laundry',repeatable:true},
+  {id:uid(),icon:'🌙',name:'Jít spát včas',pts:1,freq:'daily',cat:'self',repeatable:true},
+  {id:uid(),icon:'🧺',name:'Dát prádlo do koše',pts:2,freq:'daily',cat:'laundry',repeatable:true},
+  {id:uid(),icon:'👟',name:'Uklidit boty na místo',pts:1,freq:'daily',cat:'room',repeatable:true},
+  {id:uid(),icon:'🎒',name:'Připravit věci do školy/školky',pts:3,freq:'daily',cat:'room',repeatable:true},
+  {id:uid(),icon:'🧸',name:'Uklidit hračky',pts:3,freq:'daily',cat:'room',repeatable:true},
+  {id:uid(),icon:'🥄',name:'Odnést talíř po jídle',pts:1,freq:'daily',cat:'dishes',repeatable:true},
+  {id:uid(),icon:'🍽',name:'Prostřít stůl',pts:2,freq:'occasional',cat:'dishes',repeatable:true},
+  {id:uid(),icon:'🗑',name:'Vysypat koš v koupelně',pts:2,freq:'occasional',cat:'trash',repeatable:true},
+  {id:uid(),icon:'♻️',name:'Vysypat koš v kuchyni',pts:2,freq:'daily',cat:'trash',repeatable:true},
+  {id:uid(),icon:'🧴',name:'Uklidit koupelnu po sobě',pts:2,freq:'daily',cat:'floor',repeatable:true},
+  {id:uid(),icon:'🧹',name:'Zamést nebo vysát',pts:5,freq:'weekly',cat:'floor',repeatable:true},
+  {id:uid(),icon:'🫧',name:'Pomoci s nádobím',pts:6,freq:'weekly',cat:'dishes',repeatable:true},
+  {id:uid(),icon:'🌿',name:'Zalít květiny',pts:3,freq:'weekly',cat:'dust',repeatable:true},
+  {id:uid(),icon:'🛒',name:'Pomoci s nákupem',pts:5,freq:'weekly',cat:'other',repeatable:true},
+  {id:uid(),icon:'🪟',name:'Utřít prach',pts:4,freq:'weekly',cat:'dust',repeatable:true},
+  {id:uid(),icon:'🧽',name:'Utřít stůl',pts:3,freq:'weekly',cat:'dust',repeatable:true},
+  {id:uid(),icon:'♻️',name:'Odnést tříděný odpad',pts:4,freq:'weekly',cat:'trash',repeatable:true},
+  {id:uid(),icon:'🤝',name:'Pomoc mámě',pts:2,freq:'daily',cat:'other',repeatable:true},
+  {id:uid(),icon:'👶',name:'Hrát si spolu',pts:5,freq:'weekly',cat:'other',repeatable:true},
+  {id:uid(),icon:'📚',name:'Hrát si 30 minut',pts:3,freq:'occasional',cat:'other',repeatable:true},
+  {id:uid(),icon:'🌱',name:'Pomoci na zahradě',pts:5,freq:'occasional',cat:'other',repeatable:true},
+  {id:uid(),icon:'🎁',name:'Uklidit pokoj do velké čistoty',pts:8,freq:'occasional',cat:'room',repeatable:true},
+  {id:uid(),icon:'🍳',name:'Pomoct uvařit nebo upéct',pts:7,freq:'occasional',cat:'dishes',repeatable:true},
+  {id:uid(),icon:'✅',name:'Chovat se k sobě hezky/pomoci si',pts:5,freq:'occasional',cat:'other',repeatable:true}
 ];}
 
 function seedRewards(){return[
@@ -1068,7 +1112,8 @@ function seedRewards(){return[
   {id:uid(),icon:'🏖',name:'Výlet k vodě',cost:75,desc:'Jezero, řeka nebo moře',tier:'diamond'},
   {id:uid(),icon:'🧭',name:'Dobrodružný výlet',cost:85,desc:'Překvapení od rodičů',tier:'diamond'},
   {id:uid(),icon:'🎉',name:'Párty s kamarády',cost:100,desc:'Oslava dle tvého výběru',tier:'diamond'},
-  {id:uid(),icon:'🎁',name:'Program na přání',cost:24,desc:'Cokoliv chceš dělat',tier:'silver'}
+  {id:uid(),icon:'🎁',name:'Program na přání',cost:24,desc:'Cokoliv chceš dělat',tier:'silver'},
+  {id:uid(),icon:'🤗',name:'Extra 10 min mazlení s mámou',cost:6,desc:'Deset minut jen pro vás dva',tier:'bronze'}
 ];}
 
 // ════════════════════════════════════════════
@@ -1354,7 +1399,8 @@ function periodKey(freq){
 function isChecked(cid,tid,freq){
   if(!D.checked[cid])return false;
   const pk=periodKey(freq);
-  return D.checked[cid][pk+tid]===true;
+  const v=D.checked[cid][pk+tid];
+  return v===true || (typeof v==='number' && v>0); // číslo = opakovatelný úkol splněný dnes N×
 }
 function setChecked(cid,tid,freq,val){
   if(!D.checked[cid])D.checked[cid]={};
@@ -1362,11 +1408,17 @@ function setChecked(cid,tid,freq,val){
   if(val)D.checked[cid][pk+tid]=true;
   else delete D.checked[cid][pk+tid];
 }
+// ── OPAKOVATELNÉ ÚKOLY (např. nádobí — splní se klidně vícekrát za den) ──
+function getTaskCount(cid,tid,freq){
+  if(!D.checked[cid])return 0;
+  const v=D.checked[cid][periodKey(freq)+tid];
+  return typeof v==='number' ? v : 0;
+}
 
 // ════════════════════════════════════════════
 // KIDS SCREEN
 // ════════════════════════════════════════════
-let kidsTab='tasks'; // 'tasks' | 'shop' | 'badges' | 'history'
+let kidsTab='tasks'; // 'tasks' | 'shop' | 'badges' | 'coupons'
 let shopChildId=null; // which child's rewards are shown
 let shopMode='rewards'; // 'rewards' | 'skins'
 
@@ -1675,6 +1727,39 @@ function bossDamageForMission(m, task){
   }
 }
 
+// Když rodič změní hvězdičky u úkolu, přepočti životy bosse u misí,
+// kterým tento úkol ubližuje — ať se to propíše i do srdíček pod bossem.
+function rebalanceMissionsForTaskPts(task, oldPts, newPts){
+  if(oldPts===newPts) return;
+  activeMissions().forEach(m=>{
+    const isFull = (m.taskIds && m.taskIds.length)
+      ? m.taskIds.includes(task.id)
+      : taskHitsBoss(task, m.bossId);
+    let oldDmg, newDmg;
+    if(isFull){ oldDmg=oldPts; newDmg=newPts; }
+    else if(m.mode==='only'){ oldDmg=0; newDmg=0; }
+    else if(m.mode==='one'){ oldDmg=1; newDmg=1; }
+    else { oldDmg=Math.ceil(oldPts/2); newDmg=Math.ceil(newPts/2); }
+    const diff=newDmg-oldDmg;
+    if(!diff) return;
+    m.maxHp=Math.max(1, m.maxHp+diff);
+    m.hp=Math.max(0, Math.min(m.maxHp, m.hp+diff));
+  });
+  // rozepsaná (ještě nevyhlášená) mise — životy bosse, co teprve rodič nastavuje
+  if(nmHp!==null && nmBoss){
+    const isFull = (nmTaskIds && nmTaskIds.length)
+      ? nmTaskIds.includes(task.id)
+      : taskHitsBoss(task, nmBoss);
+    let oldDmg, newDmg;
+    if(isFull){ oldDmg=oldPts; newDmg=newPts; }
+    else if(nmMode==='only'){ oldDmg=0; newDmg=0; }
+    else if(nmMode==='one'){ oldDmg=1; newDmg=1; }
+    else { oldDmg=Math.ceil(oldPts/2); newDmg=Math.ceil(newPts/2); }
+    const diff=newDmg-oldDmg;
+    if(diff) nmHp=Math.max(1, nmHp+diff);
+  }
+}
+
 // ── KTERÉ ÚKOLY BOSSOVI UBLIŽUJÍ ──
 // Shoda podle klíčových slov v názvu úkolu (bez diakritiky, malá písmena).
 const BOSS_TAGS={
@@ -1751,25 +1836,35 @@ function checkMissionExpiry(){
 }
 
 // ── ZÁSAH: volá se z toggleTask, zasáhne VŠECHNY běžící mise ──
+// Když stejný úkol dnes u té mise už jednou ublížil (např. ho společně
+// zaškrtly obě děti), druhý a další zásah se bossovi nepropíše — jen se
+// zapamatuje, kdo poškození "vybojoval", ať jde správně vrátit při odškrtnutí.
 function bossHit(cid, task){
   const missions=activeMissions();
   if(!missions.length)return;
+  const today=dayNum();
   let anyDamage=false, anyRelated=false, defeated=[];
+  const hitNow=new Map(); // m.id -> dmg skutečně udělené touto akcí
   missions.forEach(m=>{
     const dmg=bossDamageForMission(m, task);
     if(dmg<=0)return;
+    if(!m.taskHitBy) m.taskHitBy={};
+    const already=m.taskHitBy[task.id];
+    if(already && already.day===today) return; // dnes už tento úkol bossovi ublížil
     anyDamage=true;
     if(taskHitsBoss(task, m.bossId)) anyRelated=true;
     m.hp=Math.max(0, m.hp-dmg);
     m.hits[cid]=(m.hits[cid]||0)+1;
     m.dmg[cid]=(m.dmg[cid]||0)+dmg;
+    m.taskHitBy[task.id]={day:today, cid};
+    hitNow.set(m.id, dmg);
     if(m.hp<=0){ m.status='won'; defeated.push(m); }
   });
   save();
   requestAnimationFrame(()=>{
     // otřes všech zasažených bossů + letící číslo u každého
     missions.forEach(m=>{
-      const dmg=bossDamageForMission(m, task);
+      const dmg=hitNow.get(m.id)||0;
       const el=document.getElementById('boss-figure-'+m.id);
       const seen=isInViewport(el);
       if(el){
@@ -1786,7 +1881,7 @@ function bossHit(cid, task){
     // přilepená lišta dole: překresli a nech ji bliknout, ať si toho dítě všimne
     renderBossHud();
     missions.forEach(m=>{
-      const dmg=bossDamageForMission(m, task);
+      const dmg=hitNow.get(m.id)||0;
       if(dmg<=0)return;
       const hudEl=document.getElementById('hud-'+m.id);
       if(!hudEl)return;
@@ -1809,13 +1904,17 @@ function bossHit(cid, task){
 function bossUnhit(cid, task){
   const missions=activeMissions();
   if(!missions.length)return;
+  const today=dayNum();
   let changed=false;
   missions.forEach(m=>{
     const dmg=bossDamageForMission(m, task);
     if(dmg<=0)return;
+    const credited=m.taskHitBy && m.taskHitBy[task.id];
+    if(!credited || credited.day!==today || credited.cid!==cid) return; // tenhle zásah bossovi neublížil (jiné dítě už ho dnes trefilo)
     m.hp=Math.min(m.maxHp, m.hp+dmg);
     m.hits[cid]=Math.max(0,(m.hits[cid]||0)-1);
     m.dmg[cid]=Math.max(0,(m.dmg[cid]||0)-dmg);
+    delete m.taskHitBy[task.id];
     changed=true;
   });
   if(!changed)return;
@@ -2189,6 +2288,7 @@ function renderPMission(){
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap;">
             <button class="btn btn-ghost btn-sm" onclick="extendMission('${m.id}')">📅 +týden</button>
+            <button class="btn btn-ghost btn-sm" onclick="editMissionHp('${m.id}')">✏️ Upravit životy</button>
             <button class="btn btn-green btn-sm" onclick="forceWinMission('${m.id}')">🏆 Uznat</button>
             <button class="btn btn-red btn-sm" onclick="cancelMission('${m.id}')">✕ Zrušit</button>
           </div>
@@ -2432,6 +2532,17 @@ function extendMission(mid){
   save(); renderPMission(); renderKids();
   toast('Mise prodloužena o týden 📅');
 }
+function editMissionHp(mid){
+  const m=missionById(mid); if(!m)return;
+  inputModal('Upravit životy bosse', `Boss má teď ${m.hp} / ${m.maxHp} životů. Kolik má mít celkem?`, 'number', m.maxHp, v=>{
+    const n=parseInt(v); if(isNaN(n)||n<1)return;
+    const dealt=m.maxHp-m.hp; // poškození, které boss už dostal, zůstane zachováno
+    m.maxHp=n;
+    m.hp=Math.max(0, Math.min(n, n-dealt));
+    save(); renderPMission(); renderKids();
+    toast('Životy bosse upraveny ⚔️');
+  });
+}
 function forceWinMission(mid){
   const m=missionById(mid); if(!m)return;
   m.hp=0; m.status='won'; save();
@@ -2535,12 +2646,12 @@ function grantChest(c, reason){
   // reason jen pro případný toast
 }
 
-// zkontroluj po splnění úkolu: každých 5 úkolů = truhla
+// zkontroluj po splnění úkolu: každých 10 úkolů = truhla
 function checkChestProgress(c){
   c.taskCounter=(c.taskCounter||0)+1;
-  if(c.taskCounter>=5){
-    c.taskCounter-=5;
-    grantChest(c,'5úkolů');
+  if(c.taskCounter>=10){
+    c.taskCounter-=10;
+    grantChest(c,'10úkolů');
     return true;
   }
   return false;
@@ -2652,8 +2763,8 @@ function revealChestReward(c, reward){
   c.chests=Math.max(0,(c.chests||0)-1);
   let sub='';
   if(reward.type==='stars'){
+    // hvězdičky z truhly nejsou "zaslouženy" jako splněný úkol, proto se nepočítají do týdenního závodu
     c.stars+=reward.amount; c.totalEarned=(c.totalEarned||0)+reward.amount;
-    addWeekStars(c, reward.amount);
     sub='Přidány rovnou k tvým hvězdičkám ⭐';
   } else if(reward.type==='skin'){
     // náhodný doplněk, který ještě nemá
@@ -2661,7 +2772,7 @@ function revealChestReward(c, reward){
     const avail=SKINS.filter(s=>!owned.includes(s.id));
     const pick=avail.length?avail[Math.floor(Math.random()*avail.length)]:null;
     if(pick){ c.ownedSkins=[...owned,pick.id]; reward=Object.assign({},reward,{icon:'🎁',name:'Nový doplněk: '+pick.name}); sub='Najdeš ho v Postavičce ✨'; }
-    else { c.stars+=5; addWeekStars(c,5); reward=Object.assign({},reward,{icon:'⭐',name:'Máš všechny doplňky — 5 hvězdiček!'}); }
+    else { c.stars+=5; reward=Object.assign({},reward,{icon:'⭐',name:'Máš všechny doplňky — 5 hvězdiček!'}); }
   } else if(reward.type==='frame'){
     c.goldFrameUntil=Date.now()+86400000;
     sub='Tvoje postavička teď září zlatě! 🌟';
@@ -2923,7 +3034,6 @@ function renderKidsTasks(){
     <button class="ctab ${kidsTab==='shop'?'on':''}" onclick="switchKidsTab('shop')">Odměny</button>
     <button class="ctab ${kidsTab==='badges'?'on':''}" onclick="switchKidsTab('badges')">Odznaky</button>
     <button class="ctab ${kidsTab==='coupons'?'on':''}" onclick="switchKidsTab('coupons')">Kapsa 🎟️</button>
-    <button class="ctab ${kidsTab==='history'?'on':''}" onclick="switchKidsTab('history')">Historie</button>
   </div>`;
 
   if(kidsTab==='tasks'){
@@ -2954,13 +3064,21 @@ function renderKidsTasks(){
             <div class="task-row-info" style="flex:1;padding:12px 16px;display:flex;align-items:center;gap:10px;">
               <span style="font-size:1.2rem;width:24px;text-align:center;cursor:pointer;" onclick="speak('${tSpeak.replace(/'/g,"\\'")}')">${t.icon}</span>
               <div style="flex:1;min-width:0;cursor:pointer;" onclick="speak('${tSpeak.replace(/'/g,"\\'")}')">
-                <div class="task-name" style="font-size:.88rem;font-weight:600;">${t.name} <span style="color:#F5A623;font-weight:800;">+${t.pts}</span></div>
+                <div class="task-name" style="font-size:.88rem;font-weight:600;">${t.name} <span style="color:#F5A623;font-weight:800;">+${t.pts}</span>${t.repeatable?' <span title="Jde splnit i vícekrát za den" style="font-size:.68rem;color:#8B5CF6;font-weight:800;">↻</span>':''}</div>
                 <div class="task-stars-dots" style="margin-top:4px;">${starDots(t.pts,'#FFC300',10)}</div>
               </div>
               ${isRel?`<span onclick="speak('${bossSpeak.replace(/'/g,"\\'")}')" title="Ubližuje bossovi" style="font-size:1rem;flex-shrink:0;cursor:pointer;background:#4F46E5;border-radius:100px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(79,70,229,.35);">${bossIcon}</span>`:''}
             </div>
             ${D.children.map(c=>{
               const color=COLORS[c.colorIdx||0];
+              if(t.repeatable){
+                // opakovatelný úkol: fajfka po zaškrtnutí zase zmizí, ať jde zaškrtnout znovu
+                return`<div onclick="repeatTaskTap('${c.id}','${t.id}')"
+                  style="width:56px;border-left:1px solid #F5F5F7;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;flex-shrink:0;"
+                  onmousedown="this.style.background='#F8F8F8'" onmouseup="this.style.background=''" ontouchstart="this.style.background='#F8F8F8'" ontouchend="this.style.background=''">
+                  <div class="task-check" id="rtc-${c.id}-${t.id}"></div>
+                </div>`;
+              }
               const done=isChecked(c.id,t.id,t.freq);
               return`<div onclick="toggleTask('${c.id}','${t.id}')"
                 style="width:56px;border-left:1px solid #F5F5F7;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;flex-shrink:0;"
@@ -3120,13 +3238,24 @@ function renderKidsTasks(){
 
   if(kidsTab==='coupons'){
     html+=`<div id="kids-coupons-wrap"></div>`;
-  }
-
-  if(kidsTab==='history'){
+    const sharedP=(D.sharedPurchases||[]).filter(p=>!p.returned);
+    if(sharedP.length){
+      html+=`<div class="section-label">👨‍👩‍👧‍👦 Rodinné odměny</div>`;
+      html+=sharedP.map(p=>`
+        <div class="purchase-pill${p.redeemed?' redeemed':''}">
+          <div class="p-icon">${p.icon}</div>
+          <div class="p-info">
+            <div class="p-name">${p.name}</div>
+            <div class="p-meta">${p.cost} ⭐ · ${p.when}</div>
+          </div>
+          <div class="p-badge${p.redeemed?' used':''}">${p.redeemed?'✓ Uplatněno':'Čeká'}</div>
+          <button class="btn btn-ghost btn-sm" onclick="returnSharedPurchase('${p.id}')" title="Vrátit hvězdičky">↩️</button>
+        </div>`).join('');
+    }
     D.children.forEach(c=>{
-      const purchases=(c.purchases||[]);
+      const purchases=(c.purchases||[]).filter(p=>!p.returned);
       html+=`<div style="margin-bottom:20px;">
-        <div class="section-label">${c.name}</div>
+        <div class="section-label">${c.name} — koupené odměny</div>
         ${!purchases.length
           ?`<div class="empty" style="padding:16px 0"><div class="empty-msg">Zatím žádné odměny</div></div>`
           :purchases.map(p=>`
@@ -3137,6 +3266,7 @@ function renderKidsTasks(){
               <div class="p-meta">${p.cost} ⭐ · ${p.when}</div>
             </div>
             <div class="p-badge${p.redeemed?' used':''}">${p.redeemed?'✓ Uplatněno':'Čeká'}</div>
+            <button class="btn btn-ghost btn-sm" onclick="returnPurchase('${p.id}')" title="Vrátit hvězdičky">↩️</button>
           </div>`).join('')}
       </div>`;
     });
@@ -3155,6 +3285,7 @@ function toggleTask(cid,tid){
   const c=D.children.find(x=>x.id===cid);
   const t=D.tasks.find(x=>x.id===tid);
   if(!c||!t)return;
+  if(t.repeatable){ repeatTaskTap(cid,tid); return; } // opakovatelné úkoly mají vlastní ovládání v mřížce
 
   // Už splněno? → odškrtnout a vrátit body
   if(isChecked(cid,tid,t.freq)){
@@ -3163,6 +3294,7 @@ function toggleTask(cid,tid){
     c.totalEarned=Math.max(0,(c.totalEarned||0)-t.pts);
     subWeekStars(c,t.pts);
     if(c.taskCounter>0) c.taskCounter--;
+    logActivity(c,t,'undone');
     save(); renderKids(); sfxDown();
     bossUnhit(cid, t);   // vrať i poškození bosse, jinak by šlo zaškrtávat/odškrtávat pro zadarmo poškození
     toast(`${c.name}: úkol „${t.name}" odškrtnut (−${t.pts} ⭐)`);
@@ -3170,6 +3302,40 @@ function toggleTask(cid,tid){
   }
 
   setChecked(cid,tid,t.freq,true);
+  grantTaskCompletion(c,t,cid);
+}
+
+// Opakovatelný úkol (např. nádobí) — každé kliknutí se rovnou započítá a fajfka
+// zase zmizí (nezůstává zaškrtnutá), ať jde úkol splnit znovu klidně za pár minut.
+function repeatTaskTap(cid,tid){
+  const c=D.children.find(x=>x.id===cid);
+  const t=D.tasks.find(x=>x.id===tid);
+  if(!c||!t)return;
+  if(!D.checked[cid])D.checked[cid]={};
+  const key=periodKey(t.freq)+tid;
+  D.checked[cid][key]=getTaskCount(cid,tid,t.freq)+1; // jen pro statistiky (perfektní den apod.)
+  grantTaskCompletion(c,t,cid);
+  // krátce probliknout fajfku, ať dítě vidí, že se to započítalo — pak zase zmizí
+  requestAnimationFrame(()=>{
+    const box=document.getElementById('rtc-'+cid+'-'+tid);
+    if(!box)return;
+    const color=COLORS[c.colorIdx||0];
+    box.classList.add('on'); box.style.background=color; box.style.borderColor=color; box.textContent='✓';
+    setTimeout(()=>{ box.classList.remove('on'); box.style.background=''; box.style.borderColor=''; box.textContent=''; },500);
+  });
+}
+
+// ── AKTIVITA: log pro rodiče, kdo/kdy/za co si připsal(a) hvězdičky ──
+function logActivity(c,t,action){
+  if(!Array.isArray(D.activityLog)) D.activityLog=[];
+  D.activityLog.push({id:uid(),childId:c.id,childName:c.name,taskIcon:t.icon,taskName:t.name,pts:t.pts,action,when:new Date().toLocaleString('cs-CZ'),ts:Date.now()});
+  if(D.activityLog.length>300) D.activityLog=D.activityLog.slice(-300); // ať localStorage neroste do nekonečna
+}
+
+// Sdílená logika odměny za splnění úkolu — volá se jak z běžného zaškrtnutí,
+// tak z opakovatelných úkolů, ať se hvězdičky/série/odznaky/truhla/boss chovají stejně.
+function grantTaskCompletion(c,t,cid){
+  logActivity(c,t,'done');
   // Add points
   c.stars+=t.pts;
   c.totalEarned=(c.totalEarned||0)+t.pts;
@@ -3179,7 +3345,7 @@ function toggleTask(cid,tid){
   const streakMsg=updateStreak(c);
   // Badges
   const newBadges=checkBadges(c);
-  const gotChest5 = checkChestProgress(c);      // každých 5 úkolů
+  const gotChest5 = checkChestProgress(c);      // každých 10 úkolů
   const gotChestPerfect = checkPerfectDay(c);   // perfektní den
   save();sfxOk();confetti(24);renderKids();
   bossHit(cid, t);   // zásah do bosse (pokud běží mise)
@@ -3326,20 +3492,24 @@ async function buySharedReward(rid){
       if(!ok)return;
       // deduct proportionally from each child based on their stars
       let remaining=r.cost;
+      const deductions={};
       // sort children by stars descending, deduct fairly
       const kids=[...D.children].sort((a,b)=>b.stars-a.stars);
       // proportional split
       const total=kids.reduce((s,c)=>s+c.stars,0);
       kids.forEach((c,i)=>{
+        let take;
         if(i===kids.length-1){
+          take=Math.min(c.stars,remaining);
           c.stars=Math.max(0,c.stars-remaining); // last one takes the rest
         } else {
           const share=Math.round(r.cost*(c.stars/total));
-          const take=Math.min(share,c.stars,remaining);
+          take=Math.min(share,c.stars,remaining);
           c.stars-=take; remaining-=take;
         }
+        deductions[c.id]=(deductions[c.id]||0)+take;
       });
-      const purchase={id:uid(),icon:r.icon,name:r.name,cost:r.cost,when:new Date().toLocaleString('cs-CZ'),redeemed:false,shared:true};
+      const purchase={id:uid(),icon:r.icon,name:r.name,cost:r.cost,when:new Date().toLocaleString('cs-CZ'),redeemed:false,shared:true,deductions};
       D.sharedPurchases.unshift(purchase);
       // parent notification
       if(!D.notifications)D.notifications=[];
@@ -3525,7 +3695,7 @@ function buySkin(cid,sid){
 
 // ════════════════════════════════════════════
 function ptab(name){
-  const names=['children','tasks','rewards','mission','purchases','settings'];
+  const names=['children','tasks','rewards','mission','purchases','activity','settings'];
   document.querySelectorAll('.ptab').forEach((b,i)=>b.classList.toggle('on',names[i]===name));
   document.querySelectorAll('.ptab-panel').forEach(p=>p.classList.remove('on'));
   document.getElementById('ptab-'+name).classList.add('on');
@@ -3534,12 +3704,13 @@ function ptab(name){
   if(name==='rewards') renderPRewards();
   if(name==='mission') renderPMission();
   if(name==='purchases')renderPPurchases();
+  if(name==='activity')renderPActivity();
   if(name==='settings')loadSettings();
   updatePurchaseBadge();
 }
 
 function updatePurchaseBadge(){
-  const pending=(D.purchases||[]).filter(p=>!p.redeemed).length + (D.sharedPurchases||[]).filter(p=>!p.redeemed).length;
+  const pending=(D.purchases||[]).filter(p=>!p.redeemed&&!p.returned).length + (D.sharedPurchases||[]).filter(p=>!p.redeemed&&!p.returned).length;
   const purchTab=document.getElementById('ptab-btn-purchases');
   if(!purchTab)return;
   purchTab.innerHTML='Nákupy'+(pending>0?` <span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:100px;background:#FF3B30;color:#fff;font-size:.62rem;font-weight:800;vertical-align:middle;">${pending}</span>`:'');
@@ -4000,12 +4171,14 @@ function addTask(){
   const pts=parseInt(document.getElementById('p-tpts').value);
   const icon=sanitizeText(document.getElementById('p-ticon').value.trim())||'✅';
   const freq=document.getElementById('p-tfreq').value;
+  const repeatable=document.getElementById('p-trepeat').checked;
   if(!name||isNaN(pts)||pts<1){toast('Vyplň název a hvězdičky.');return;}
-  D.tasks.push({id:uid(),icon,name,pts,freq,cat:guessCat(name)});
+  D.tasks.push({id:uid(),icon,name,pts,freq,cat:guessCat(name),repeatable});
   save();renderPTasks();
   document.getElementById('p-tname').value='';
   document.getElementById('p-tpts').value='';
   document.getElementById('p-ticon').value='';
+  document.getElementById('p-trepeat').checked=true;
 }
 function renderPTasks(){
   const el=document.getElementById('p-tasks-list');
@@ -4016,7 +4189,7 @@ function renderPTasks(){
       <span style="font-size:1.1rem;width:22px;text-align:center">${t.icon}</span>
       <div style="flex:1" id="pt-info-${t.id}">
         <div class="list-name">${t.name}</div>
-        <div class="list-sub">${t.pts} ⭐ · ${freqLabel[t.freq]||t.freq}</div>
+        <div class="list-sub">${t.pts} ⭐ · ${freqLabel[t.freq]||t.freq}${t.repeatable?' · ↻ opakovatelný':''}</div>
       </div>
       <button class="btn btn-ghost btn-sm" id="pt-edit-${t.id}" onclick="editTask('${t.id}')">Upravit</button>
       <button class="btn btn-red btn-sm" onclick="removeTask('${t.id}')">✕</button>
@@ -4035,15 +4208,22 @@ function editTask(tid){
     <div style="font-size:.66rem;font-weight:700;color:#999;text-transform:uppercase;margin:8px 0 5px;">Kategorie (pro mise)</div>
     <select class="inline-inp" id="te-c-${tid}" style="width:100%;font-family:inherit;">
       ${TASK_CATS.map(c=>`<option value="${c.id}"${c.id===cur?' selected':''}>${c.icon} ${c.label}</option>`).join('')}
-    </select>`;
+    </select>
+    <label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#666;margin-top:8px;cursor:pointer;">
+      <input type="checkbox" id="te-r-${tid}" ${t.repeatable?'checked':''} style="width:16px;height:16px;">
+      Opakovatelný — jde splnit i vícekrát za den
+    </label>`;
   editBtn.textContent='Uložit';
   editBtn.onclick=()=>{
     const n=sanitizeText(document.getElementById('te-n-'+tid)?.value?.trim());
     const p=parseInt(document.getElementById('te-p-'+tid)?.value);
     const c=document.getElementById('te-c-'+tid)?.value;
-    if(n)t.name=n;if(!isNaN(p)&&p>0)t.pts=p;
+    const r=document.getElementById('te-r-'+tid)?.checked;
+    if(n)t.name=n;
+    if(!isNaN(p)&&p>0){ const oldPts=t.pts; t.pts=p; rebalanceMissionsForTaskPts(t, oldPts, p); }
     if(c)t.cat=c;
-    save();renderPTasks();renderKids();toast('Uloženo.');
+    t.repeatable=!!r;
+    save();renderPTasks();renderKids();renderPMission();toast('Uloženo.');
   };
 }
 function removeTask(tid){D.tasks=D.tasks.filter(t=>t.id!==tid);save();renderPTasks();}
@@ -4153,7 +4333,7 @@ function renderPPurchases(){
   const individual=D.purchases||[];
   const shared=D.sharedPurchases||[];
   if(!individual.length && !shared.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">Žádné nákupy odměn</div></div>`;return;}
-  const pending=individual.filter(p=>!p.redeemed).length + shared.filter(p=>!p.redeemed).length;
+  const pending=individual.filter(p=>!p.redeemed&&!p.returned).length + shared.filter(p=>!p.redeemed&&!p.returned).length;
   const banner=pending>0
     ?`<div style="background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:13px;padding:12px 14px;margin-bottom:12px;font-size:.85rem;color:#9A3412;font-weight:600;">🔔 ${pending} ${pending===1?'nová odměna čeká':pending<5?'nové odměny čekají':'nových odměn čeká'} na uplatnění</div>`
     :'';
@@ -4167,9 +4347,12 @@ function renderPPurchases(){
           <div class="p-name">${esc(p.name)}${p.fromMission?' <span style="color:#4F46E5;font-weight:600;">(mise)</span>':''}</div>
           <div class="p-meta">${p.cost} ⭐ · ${esc(p.when)}</div>
         </div>
-        ${!p.redeemed
-          ?`<button class="btn btn-green btn-sm" onclick="redeemSharedPurchase('${p.id}')">✓ Uplatnit</button>`
-          :`<div class="p-badge used">✓ Uplatněno</div>`}
+        ${p.returned
+          ?`<div class="p-badge">↩️ Vráceno</div>`
+          :(!p.redeemed
+            ?`<button class="btn btn-green btn-sm" onclick="redeemSharedPurchase('${p.id}')">✓ Uplatnit</button>`
+            :`<div class="p-badge used">✓ Uplatněno</div>`)}
+        ${!p.returned?`<button class="btn btn-ghost btn-sm" onclick="returnSharedPurchase('${p.id}')" title="Vrátit hvězdičky">↩️</button>`:''}
       </div>`).join('');
     html+=`<div style="height:10px;"></div>`;
   }
@@ -4182,9 +4365,12 @@ function renderPPurchases(){
           <div class="p-name">${esc(p.name)} — <b>${esc(p.childName)}</b></div>
           <div class="p-meta">${p.cost} ⭐ · ${esc(p.when)}</div>
         </div>
-        ${!p.redeemed
-          ?`<button class="btn btn-green btn-sm" onclick="redeemPurchase('${p.id}')">✓ Uplatnit</button>`
-          :`<div class="p-badge used">✓ Uplatněno</div>`}
+        ${p.returned
+          ?`<div class="p-badge">↩️ Vráceno</div>`
+          :(!p.redeemed
+            ?`<button class="btn btn-green btn-sm" onclick="redeemPurchase('${p.id}')">✓ Uplatnit</button>`
+            :`<div class="p-badge used">✓ Uplatněno</div>`)}
+        ${!p.returned?`<button class="btn btn-ghost btn-sm" onclick="returnPurchase('${p.id}')" title="Vrátit hvězdičky">↩️</button>`:''}
       </div>`).join('');
   }
   el.innerHTML=html;
@@ -4207,6 +4393,71 @@ function redeemSharedPurchase(pid){
   if(!gp)return;
   gp.redeemed=true;
   save();renderPPurchases();updatePurchaseBadge();toast('Odměna označena jako uplatněná ✓');
+}
+// ── vrácení odměny (dítě si to rozmyslelo / nedodrželo podmínky) ──
+function returnPurchase(pid){
+  const gp=(D.purchases||[]).find(x=>x.id===pid);
+  if(!gp||gp.returned)return;
+  const c=D.children.find(x=>x.id===gp.childId);
+  confirmModal(`Vrátit ${gp.icon} ${gp.name}?`, `${c?c.name:'Dítěti'} se vrátí zpět ${gp.cost} ⭐.`, ok=>{
+    if(!ok)return;
+    if(c) c.stars+=gp.cost;
+    gp.returned=true; gp.redeemed=false;
+    const cp=c&&(c.purchases||[]).find(x=>x.id===pid);
+    if(cp){ cp.returned=true; cp.redeemed=false; }
+    save(); renderPPurchases(); updatePurchaseBadge(); renderKids();
+    toast(`Vráceno: +${gp.cost} ⭐ pro ${c?c.name:'dítě'}`);
+  });
+}
+function returnSharedPurchase(pid){
+  const gp=(D.sharedPurchases||[]).find(x=>x.id===pid);
+  if(!gp||gp.returned)return;
+  confirmModal(`Vrátit ${gp.icon} ${gp.name}?`, `Rodině se vrátí zpět ${gp.cost} ⭐.`, ok=>{
+    if(!ok)return;
+    if(gp.deductions){
+      Object.keys(gp.deductions).forEach(cid=>{
+        const c=D.children.find(x=>x.id===cid);
+        if(c) c.stars+=gp.deductions[cid];
+      });
+    } else if(D.children.length){
+      const each=Math.floor(gp.cost/D.children.length);
+      let rem=gp.cost-each*D.children.length;
+      D.children.forEach((c,i)=>{ c.stars+=each+(i<rem?1:0); });
+    }
+    gp.returned=true; gp.redeemed=false;
+    save(); renderPPurchases(); updatePurchaseBadge(); renderKids();
+    toast(`Vráceno: +${gp.cost} ⭐ rodině`);
+  });
+}
+
+// ── AKTIVITA (rodič): kdo, kdy a za jaký úkol si připsal/odškrtnul hvězdičky ──
+let activityFilterCid='all';
+function setActivityFilter(cid){ activityFilterCid=cid; renderPActivity(); }
+function renderPActivity(){
+  const el=document.getElementById('p-activity-list');
+  if(!el)return;
+  const filterHtml=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="setActivityFilter('all')" style="background:${activityFilterCid==='all'?'#111':'#F0F0F0'};color:${activityFilterCid==='all'?'#fff':'#666'};">Všechny</button>
+    ${D.children.map(c=>`<button class="btn btn-sm" onclick="setActivityFilter('${c.id}')" style="background:${activityFilterCid===c.id?COLORS[c.colorIdx||0]:'#F0F0F0'};color:${activityFilterCid===c.id?'#fff':'#666'};">${esc(c.name)}</button>`).join('')}
+  </div>`;
+  const log=(D.activityLog||[]).slice().reverse();
+  const filtered=activityFilterCid==='all'?log:log.filter(e=>e.childId===activityFilterCid);
+  if(!filtered.length){
+    el.innerHTML=filterHtml+`<div class="empty"><div class="empty-icon">📜</div><div class="empty-msg">Zatím žádná aktivita</div></div>`;
+    return;
+  }
+  const shown=filtered.slice(0,150);
+  el.innerHTML=filterHtml+shown.map(e=>{
+    const isUndo=e.action==='undone';
+    return `<div class="purchase-pill">
+      <div class="p-icon">${esc(e.taskIcon)}</div>
+      <div class="p-info">
+        <div class="p-name">${esc(e.taskName)} — <b>${esc(e.childName)}</b></div>
+        <div class="p-meta">${esc(e.when)}</div>
+      </div>
+      <div class="p-badge" style="${isUndo?'background:#FEE2E2;color:#DC2626;border-color:#FECACA;':''}">${isUndo?'−':'+'}${e.pts} ⭐</div>
+    </div>`;
+  }).join('') + (filtered.length>150?`<div style="text-align:center;font-size:.72rem;color:#999;margin-top:8px;">Zobrazeno posledních 150 z ${filtered.length}</div>`:'');
 }
 
 // ── settings ──
@@ -4276,7 +4527,8 @@ function clearAllOf(what){
     avatar:{icon:'🎨',name:'postavičky',desc:'Avatary se vrátí na výchozí, děti si je postaví znovu.'},
     chest:{icon:'🎁',name:'truhly a poukázky',desc:'Nevybrané truhly, postup k další truhle i všechny poukázky z Kapsy odměn.'},
     checked:{icon:'✅',name:'zaškrtnuté úkoly',desc:'Všechny fajfky u úkolů zmizí — jako by dnešek začínal znovu.'},
-    all:{icon:'🔄',name:'úplně vše',desc:'Hvězdičky, série, odznaky, doplňky, nákupy, závod, postavičky, truhly, poukázky i zaškrtnuté úkoly. Úkoly a odměny zůstanou.'},
+    activity:{icon:'📜',name:'log aktivity',desc:'Smaže se historie, kdo a kdy si za jaký úkol připsal hvězdičky.'},
+    all:{icon:'🔄',name:'úplně vše',desc:'Hvězdičky, série, odznaky, doplňky, nákupy, závod, postavičky, truhly, poukázky, zaškrtnuté úkoly i log aktivity. Úkoly a odměny zůstanou.'},
   };
   const L=labels[what]; if(!L)return;
   const bg=document.createElement('div'); bg.className='modal-bg';
@@ -4313,6 +4565,7 @@ function clearAllOf(what){
       D.sharedPurchases=[]; D.purchases=[]; D.notifications=[];
     }
     if(what==='checked'||what==='all'){ D.checked={}; }
+    if(what==='activity'||what==='all'){ D.activityLog=[]; }
     save(); bg.remove();
     load();               // znovu doplní chybějící struktury (např. výchozí avatar)
     renderPChildren();
