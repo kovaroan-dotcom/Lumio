@@ -3323,12 +3323,30 @@ function repeatTaskTap(cid,tid){
     box.classList.add('on'); box.style.background=color; box.style.borderColor=color; box.textContent='✓';
     setTimeout(()=>{ box.classList.remove('on'); box.style.background=''; box.style.borderColor=''; box.textContent=''; },500);
   });
+  // opakovatelný úkol nemá stálou fajfku ke zrušení kliknutím — nabídni pár vteřin
+  // možnost vzít omylem udělané kliknutí zpět
+  const lastEntry=D.activityLog[D.activityLog.length-1];
+  if(lastEntry) showUndoToast(lastEntry.id, `${t.icon} ${t.name} +${t.pts} ⭐ (${c.name})`);
+}
+
+// ── RYCHLÉ VZETÍ ZPĚT (dětská obrazovka) ──
+// Bublina dole s tlačítkem "Zpět", co pár vteřin po opakovatelném úkolu zmizí sama.
+let _undoToastTt=null;
+function showUndoToast(entryId, label){
+  const old=document.getElementById('undo-toast'); if(old)old.remove();
+  const box=document.createElement('div');
+  box.id='undo-toast';
+  box.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:950;background:#1E1B4B;color:#fff;padding:9px 9px 9px 16px;border-radius:100px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.32);font-size:.78rem;font-weight:700;max-width:92vw;';
+  box.innerHTML=`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span><button onclick="undoActivity('${entryId}')" style="border:none;background:rgba(255,255,255,.2);color:#fff;font-weight:800;padding:7px 14px;border-radius:100px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;">Zpět ↩️</button>`;
+  document.body.appendChild(box);
+  clearTimeout(_undoToastTt);
+  _undoToastTt=setTimeout(()=>{ if(box.isConnected) box.remove(); },5000);
 }
 
 // ── AKTIVITA: log pro rodiče, kdo/kdy/za co si připsal(a) hvězdičky ──
 function logActivity(c,t,action){
   if(!Array.isArray(D.activityLog)) D.activityLog=[];
-  D.activityLog.push({id:uid(),childId:c.id,childName:c.name,taskIcon:t.icon,taskName:t.name,pts:t.pts,action,when:new Date().toLocaleString('cs-CZ'),ts:Date.now()});
+  D.activityLog.push({id:uid(),childId:c.id,childName:c.name,taskId:t.id,taskIcon:t.icon,taskName:t.name,pts:t.pts,action,when:new Date().toLocaleString('cs-CZ'),ts:Date.now()});
   if(D.activityLog.length>300) D.activityLog=D.activityLog.slice(-300); // ať localStorage neroste do nekonečna
 }
 
@@ -4449,15 +4467,63 @@ function renderPActivity(){
   const shown=filtered.slice(0,150);
   el.innerHTML=filterHtml+shown.map(e=>{
     const isUndo=e.action==='undone';
-    return `<div class="purchase-pill">
+    const canRevert=e.action==='done' && !e.reverted;
+    return `<div class="purchase-pill${e.reverted?' redeemed':''}">
       <div class="p-icon">${esc(e.taskIcon)}</div>
       <div class="p-info">
         <div class="p-name">${esc(e.taskName)} — <b>${esc(e.childName)}</b></div>
-        <div class="p-meta">${esc(e.when)}</div>
+        <div class="p-meta">${esc(e.when)}${e.reverted?' · zrušeno':''}</div>
       </div>
       <div class="p-badge" style="${isUndo?'background:#FEE2E2;color:#DC2626;border-color:#FECACA;':''}">${isUndo?'−':'+'}${e.pts} ⭐</div>
+      ${canRevert?`<button class="btn btn-ghost btn-sm" onclick="revertActivity('${e.id}')" title="Zrušit tuto aktivitu — odečte hvězdičky zpět">↩️</button>`:''}
     </div>`;
   }).join('') + (filtered.length>150?`<div style="text-align:center;font-size:.72rem;color:#999;margin-top:8px;">Zobrazeno posledních 150 z ${filtered.length}</div>`:'');
+}
+
+// Skutečná reverze záznamu aktivity — odečte hvězdičky, sníží denní počítadlo
+// (i u opakovatelných úkolů) a vrátí případné poškození bosse. Sdílená mezi
+// rodičovským zrušením (s potvrzením) a rychlým dětským "Zpět" (bez potvrzení).
+function applyActivityRevert(e){
+  const c=D.children.find(x=>x.id===e.childId);
+  const t=D.tasks.find(x=>x.id===e.taskId);
+  if(c){
+    c.stars=Math.max(0, c.stars-e.pts);
+    c.totalEarned=Math.max(0,(c.totalEarned||0)-e.pts);
+    subWeekStars(c,e.pts);
+    if(c.taskCounter>0) c.taskCounter--;
+  }
+  if(c && t){
+    const key=periodKey(t.freq)+t.id;
+    const cur=D.checked[c.id] && D.checked[c.id][key];
+    if(typeof cur==='number' && cur>0){
+      D.checked[c.id][key]=cur-1;
+      if(D.checked[c.id][key]<=0) delete D.checked[c.id][key];
+    } else if(cur===true){
+      delete D.checked[c.id][key];
+    }
+    bossUnhit(c.id, t);
+  }
+  e.reverted=true;
+}
+// Zrušení z rodičovské záložky Aktivita — s potvrzením, jde kdykoli zpětně.
+function revertActivity(aid){
+  const e=(D.activityLog||[]).find(x=>x.id===aid);
+  if(!e||e.action!=='done'||e.reverted)return;
+  confirmModal(`Zrušit „${e.taskName}"?`, `${e.childName} přijde o ${e.pts} ⭐, které za to dostal/a.`, ok=>{
+    if(!ok)return;
+    applyActivityRevert(e);
+    save(); renderPActivity(); renderKids();
+    toast(`Zrušeno: ${e.taskName} (−${e.pts} ⭐)`);
+  });
+}
+// Rychlé vzetí zpět z dětské obrazovky (tlačítko "Zpět" v bublině po opakovatelném úkolu) — bez potvrzení, jen pár vteřin po kliknutí.
+function undoActivity(aid){
+  const e=(D.activityLog||[]).find(x=>x.id===aid);
+  if(!e||e.action!=='done'||e.reverted)return;
+  applyActivityRevert(e);
+  save(); renderKids();
+  const box=document.getElementById('undo-toast'); if(box)box.remove();
+  toast(`Vzato zpět: ${e.taskName} (−${e.pts} ⭐)`);
 }
 
 // ── settings ──
